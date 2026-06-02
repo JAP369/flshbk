@@ -41,11 +41,51 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+// Check if Clerk is properly configured
+function isClerkConfigured(): boolean {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  return !!(
+    publishableKey &&
+    secretKey &&
+    !publishableKey.includes("placeholder") &&
+    !secretKey.includes("placeholder") &&
+    publishableKey.startsWith("pk_") &&
+    secretKey.startsWith("sk_")
+  );
+}
+
+function AppContent({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <DevAuthButton />
+      <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
+      <BottomNav />
+    </>
+  );
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const clerkConfigured = isClerkConfigured();
+
+  if (!clerkConfigured) {
+    // Dev mode without Clerk — render without ClerkProvider
+    return (
+      <html
+        lang='en'
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      >
+        <body className='min-h-full flex flex-col bg-[#0d0d0f] text-[#f0ede6]'>
+          <AppContent>{children}</AppContent>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <ClerkProvider>
       <html
@@ -54,9 +94,7 @@ export default function RootLayout({
       >
         <body className='min-h-full flex flex-col bg-[#0d0d0f] text-[#f0ede6]'>
           <AuthProvider>
-            <DevAuthButton />
-            <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
-            <BottomNav />
+            <AppContent>{children}</AppContent>
           </AuthProvider>
         </body>
       </html>
