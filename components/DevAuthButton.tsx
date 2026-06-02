@@ -7,34 +7,64 @@ import { useRouter } from "next/navigation";
 import { X, ChevronDown, LogOut, Zap, User, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
-// Only renders in development builds
 export default function DevAuthButton() {
   if (process.env.NODE_ENV !== "development") return null;
 
   return <DevAuthPanel />;
 }
 
+const DEV_USER = {
+  id: "dev-user-001",
+  email: "dev@flshbk.local",
+  username: "dev_collector",
+  display_name: "Dev Collector",
+  avatar_url: null as string | null,
+  bio: "Development mode — bypass auth",
+  level: 7,
+  xp: 3250,
+  nexus_tokens: 2840,
+  verified_trades: 14,
+  is_verified: true,
+  streak_count: 5,
+  last_active: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 function DevAuthPanel() {
-  const { user, isAuthenticated, signOut, loading } = useAuth();
+  const { user, isAuthenticated, signOut, loading, refreshUser } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   async function handleDevLogin() {
-    const res = await fetch("/api/dev-login");
-    if (res.redirected) {
-      router.push(res.url);
-      router.refresh();
-    }
+    // Set cookies on client side first
+    const maxAge = 60 * 60 * 24 * 7;
+    document.cookie = `dev_auth=1; max-age=${maxAge}; path=/; samesite=lax`;
+    document.cookie = `dev_user=${encodeURIComponent(JSON.stringify(DEV_USER))}; max-age=${maxAge}; path=/; samesite=lax`;
+
+    // Also call the API (for consistency)
+    await fetch("/api/dev-login");
+
+    // Refresh auth state
+    refreshUser();
+
+    // Force re-render of the page
+    router.refresh();
+    setOpen(false);
   }
 
   async function handleDevLogout() {
+    document.cookie =
+      "dev_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie =
+      "dev_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     await fetch("/api/dev-login", { method: "DELETE" });
     signOut();
+    setOpen(false);
   }
 
   return (
     <>
-      {/* Floating trigger */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -71,7 +101,6 @@ function DevAuthPanel() {
         />
       </motion.button>
 
-      {/* Dropdown panel */}
       <AnimatePresence>
         {open && (
           <>
@@ -82,7 +111,6 @@ function DevAuthPanel() {
               className='fixed inset-0 z-[9998]'
               onClick={() => setOpen(false)}
             />
-
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: -8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -110,9 +138,6 @@ function DevAuthPanel() {
                     }}
                   >
                     {isAuthenticated ? "AUTHENTICATED" : "DEV MODE"}
-                  </span>
-                  <span className='text-[9px] text-white/30 font-mono'>
-                    bypass auth
                   </span>
                 </div>
                 <button onClick={() => setOpen(false)}>
@@ -144,8 +169,6 @@ function DevAuthPanel() {
                       {user.nexus_tokens}
                     </div>
                   </div>
-
-                  {/* Quick stats */}
                   <div className='grid grid-cols-3 gap-2 mt-3 pt-2 border-t border-[rgba(255,255,255,0.04)]'>
                     <div className='text-center'>
                       <p className='text-xs font-bold text-white'>{user.xp}</p>
@@ -170,9 +193,6 @@ function DevAuthPanel() {
               <div className='px-3 py-2'>
                 {!isAuthenticated ? (
                   <>
-                    <p className='text-[9px] font-mono uppercase tracking-widest text-white/25 mb-2'>
-                      Quick Login
-                    </p>
                     <motion.button
                       whileTap={{ scale: 0.97 }}
                       onClick={handleDevLogin}
@@ -182,56 +202,49 @@ function DevAuthPanel() {
                         boxShadow: "0 0 16px rgba(0,200,100,0.3)",
                       }}
                     >
-                      <ShieldCheck size={14} /> Dev Login (Bypass Auth)
+                      <ShieldCheck size={14} /> Dev Login
                     </motion.button>
                     <p className='text-[9px] text-white/20 text-center mt-2 font-mono'>
-                      Creates a mock dev session with Lvl 7 collector profile
+                      Instant access · Lvl 7 collector · No signup needed
                     </p>
                   </>
                 ) : (
-                  <>
-                    <p className='text-[9px] font-mono uppercase tracking-widest text-white/25 mb-2'>
-                      Actions
-                    </p>
-                    <div className='flex flex-col gap-1.5'>
-                      <Link
-                        href='/profile/dev_collector'
-                        onClick={() => setOpen(false)}
-                      >
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5 border border-transparent'
-                        >
-                          <User size={14} className='text-white/50' />
-                          <span className='text-xs text-white/70'>
-                            View Profile
-                          </span>
-                        </motion.button>
-                      </Link>
-                      <Link href='/vault' onClick={() => setOpen(false)}>
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5 border border-transparent'
-                        >
-                          <Zap size={14} className='text-white/50' />
-                          <span className='text-xs text-white/70'>
-                            My Vault
-                          </span>
-                        </motion.button>
-                      </Link>
+                  <div className='flex flex-col gap-1.5'>
+                    <Link
+                      href='/profile/dev_collector'
+                      onClick={() => setOpen(false)}
+                    >
                       <motion.button
                         whileTap={{ scale: 0.97 }}
-                        onClick={handleDevLogout}
-                        className='w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-red-400'
-                        style={{
-                          background: "rgba(255,45,45,0.1)",
-                          border: "1px solid rgba(255,45,45,0.2)",
-                        }}
+                        className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
                       >
-                        <LogOut size={12} /> Sign Out
+                        <User size={14} className='text-white/50' />
+                        <span className='text-xs text-white/70'>
+                          View Profile
+                        </span>
                       </motion.button>
-                    </div>
-                  </>
+                    </Link>
+                    <Link href='/vault' onClick={() => setOpen(false)}>
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
+                      >
+                        <Zap size={14} className='text-white/50' />
+                        <span className='text-xs text-white/70'>My Vault</span>
+                      </motion.button>
+                    </Link>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleDevLogout}
+                      className='w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-red-400'
+                      style={{
+                        background: "rgba(255,45,45,0.1)",
+                        border: "1px solid rgba(255,45,45,0.2)",
+                      }}
+                    >
+                      <LogOut size={12} /> Sign Out
+                    </motion.button>
+                  </div>
                 )}
               </div>
             </motion.div>

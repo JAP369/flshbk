@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import type { Profile } from "@/lib/types/database";
@@ -15,6 +16,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   clerkUserId: string | null;
   signOut: () => Promise<void>;
+  refreshUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -23,11 +25,11 @@ const AuthContext = createContext<AuthContextValue>({
   isAuthenticated: false,
   clerkUserId: null,
   signOut: async () => {},
+  refreshUser: () => {},
 });
 
-// Check if Clerk is properly configured
 function isClerkConfigured(): boolean {
-  if (typeof window === "undefined") return true; // SSR default to Clerk
+  if (typeof window === "undefined") return true;
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const secretKey = process.env.CLERK_SECRET_KEY;
   return !!(
@@ -40,30 +42,26 @@ function isClerkConfigured(): boolean {
   );
 }
 
-// Read dev user from cookie
-function getDevUser(): Profile | null {
+function getCookie(name: string): string | null {
   if (typeof window === "undefined") return null;
-  try {
-    const cookies = document.cookie.split(";");
-    const sessionCookie = cookies.find((c) =>
-      c.trim().startsWith("dev_session="),
-    );
-    const userCookie = cookies.find((c) => c.trim().startsWith("dev_user="));
-
-    if (sessionCookie && userCookie) {
-      const userData = decodeURIComponent(userCookie.split("=")[1]);
-      return JSON.parse(userData) as Profile;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
+  const match = document.cookie.match(
+    new RegExp("(?:^|; )" + name + "=([^;]*)"),
+  );
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-function clearDevCookies() {
-  document.cookie =
-    "dev_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-  document.cookie = "dev_user=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+function getDevUser(): Profile | null {
+  const auth = getCookie("dev_auth");
+  if (!auth) return null;
+
+  const raw = getCookie("dev_user");
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as Profile;
+  } catch {
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -71,8 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [devUser, setDevUser] = useState<Profile | null>(null);
   const [devLoading, setDevLoading] = useState(true);
 
-  // Dev mode: read user from cookies
-  useEffect(() => {
+  const refreshDevUser = useCallback(() => {
     if (!clerkConfigured) {
       const user = getDevUser();
       setDevUser(user);
@@ -80,7 +77,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clerkConfigured]);
 
-  // If Clerk is configured, render children (ClerkProvider handles auth in layout)
+  useEffect(() => {
+    refreshDevUser();
+  }, [refreshDevUser]);
+
+  // Listen for storage events (cross-tab sync)
+  useEffect(() => {
+    if (clerkConfigured) return;
+    window.addEventListener("storage", refreshDevUser);
+    return () => window.removeEventListener("storage", refreshDevUser);
+  }, [clerkConfigured, refreshDevUser]);
+
   if (clerkConfigured) {
     return (
       <AuthContext.Provider
@@ -90,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: false,
           clerkUserId: null,
           signOut: async () => {},
+          refreshUser: () => {},
         }}
       >
         {children}
@@ -97,9 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // Dev mode: use cookie-based auth
   const handleDevSignOut = async () => {
-    clearDevCookies();
+    await fetch("/api/dev-login", { method: "DELETE" });
     setDevUser(null);
     window.location.href = "/";
   };
@@ -112,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!devUser,
         clerkUserId: devUser?.id ?? null,
         signOut: handleDevSignOut,
+        refreshUser: refreshDevUser,
       }}
     >
       {children}
