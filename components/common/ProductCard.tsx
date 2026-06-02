@@ -4,7 +4,6 @@ import { useRef } from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import {
   Heart,
-  Share2,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -19,11 +18,13 @@ export type ProductRarity =
   | "chase"
   | "ultra";
 export type ProductCategory =
-  | "pokemon"
+  | "pokemon_card"
+  | "pop_mart"
   | "lego"
-  | "hottoys"
-  | "popmart"
-  | "hotwheels";
+  | "hot_toys"
+  | "hot_wheels"
+  | "funko"
+  | "other";
 
 export interface ProductItem {
   id: string;
@@ -46,19 +47,33 @@ export interface ProductItem {
 }
 
 const categoryColors: Record<ProductCategory, string> = {
-  pokemon: "#fbbf24",
+  pokemon_card: "#fbbf24",
+  pop_mart: "#ec4899",
   lego: "#ef4444",
-  hottoys: "#8b5cf6",
-  popmart: "#ec4899",
-  hotwheels: "#f97316",
+  hot_toys: "#8b5cf6",
+  hot_wheels: "#f97316",
+  funko: "#22c55e",
+  other: "#6b7280",
 };
 
 const categoryEmojis: Record<ProductCategory, string> = {
-  pokemon: "🃏",
+  pokemon_card: "🃏",
+  pop_mart: "🎭",
   lego: "🧱",
-  hottoys: "🦸",
-  popmart: "🎭",
-  hotwheels: "🏎️",
+  hot_toys: "🦸",
+  hot_wheels: "🏎️",
+  funko: "🎃",
+  other: "📦",
+};
+
+const categoryLabels: Record<ProductCategory, string> = {
+  pokemon_card: "Pokemon",
+  pop_mart: "Pop Mart",
+  lego: "LEGO",
+  hot_toys: "Hot Toys",
+  hot_wheels: "Hot Wheels",
+  funko: "Funko",
+  other: "Other",
 };
 
 interface Props {
@@ -79,8 +94,8 @@ export default function ProductCard({
   showSource = false,
 }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const categoryColor = categoryColors[item.category];
-  const categoryEmoji = categoryEmojis[item.category];
+  const categoryColor = categoryColors[item.category] || categoryColors.other;
+  const categoryEmoji = categoryEmojis[item.category] || categoryEmojis.other;
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -135,11 +150,8 @@ export default function ProductCard({
         onTouchEnd={handleMouseLeave}
         whileTap={{ scale: 0.97 }}
         onClick={() => onSelect?.(item)}
-        className={`relative cursor-pointer rounded-2xl overflow-hidden transition-shadow duration-300 ${
-          compact ? "w-32" : "w-full"
-        }`}
+        className={`relative cursor-pointer rounded-2xl overflow-hidden transition-shadow duration-300 ${compact ? "w-32" : "w-full"}`}
       >
-        {/* Image area */}
         <div
           className={`relative overflow-hidden ${compact ? "h-32" : "h-44"}`}
           style={{ background: "linear-gradient(135deg, #1a1a22, #0d0d0f)" }}
@@ -156,12 +168,9 @@ export default function ProductCard({
               <span className='text-4xl select-none'>{categoryEmoji}</span>
             </div>
           )}
-
           {isHolo && (
             <div className='holo-shimmer absolute inset-0 mix-blend-screen opacity-50 pointer-events-none' />
           )}
-
-          {/* Category badge */}
           <div
             className='absolute top-2 left-2 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider'
             style={{
@@ -170,25 +179,13 @@ export default function ProductCard({
               border: `1px solid ${categoryColor}50`,
             }}
           >
-            {item.category === "pokemon"
-              ? "Pokemon"
-              : item.category === "lego"
-                ? "LEGO"
-                : item.category === "hottoys"
-                  ? "Hot Toys"
-                  : item.category === "popmart"
-                    ? "Pop Mart"
-                    : "Hot Wheels"}
+            {categoryLabels[item.category]}
           </div>
-
-          {/* Deal badge */}
           {item.isDeal && item.dealScore && item.dealScore >= 70 && (
             <div className='absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'>
               💎 Deal
             </div>
           )}
-
-          {/* Favorite button */}
           {showFavorite && (
             <button
               onClick={(e) => {
@@ -200,8 +197,6 @@ export default function ProductCard({
               <Heart size={12} className='text-white/70' />
             </button>
           )}
-
-          {/* Verified badge */}
           {item.verified && (
             <div className='absolute bottom-2 left-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30'>
               <span className='text-[7px] text-emerald-400 font-bold'>
@@ -211,21 +206,17 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Info area */}
         <div className='p-3 bg-[#141418]'>
           {!compact && item.series && (
             <p className='text-[9px] text-[#f0ede6]/35 uppercase tracking-widest font-mono mb-0.5 truncate'>
               {item.series}
             </p>
           )}
-
           <p
             className={`font-semibold text-[#f5f5dc] truncate ${compact ? "text-[10px]" : "text-sm"}`}
           >
             {item.name}
           </p>
-
-          {/* Price row */}
           <div className='flex items-center justify-between mt-1.5'>
             <div className='flex items-center gap-1.5'>
               <span
@@ -239,16 +230,9 @@ export default function ProductCard({
                 </span>
               )}
             </div>
-
             {item.priceChange !== undefined && (
               <div
-                className={`flex items-center gap-0.5 text-[10px] font-mono ${
-                  item.priceChange > 0
-                    ? "text-emerald-400"
-                    : item.priceChange < 0
-                      ? "text-red-400"
-                      : "text-[#f0ede6]/30"
-                }`}
+                className={`flex items-center gap-0.5 text-[10px] font-mono ${item.priceChange > 0 ? "text-emerald-400" : item.priceChange < 0 ? "text-red-400" : "text-[#f0ede6]/30"}`}
               >
                 {item.priceChange > 0 ? (
                   <TrendingUp size={10} />
@@ -262,8 +246,6 @@ export default function ProductCard({
               </div>
             )}
           </div>
-
-          {/* Source link */}
           {showSource && item.source && (
             <div className='flex items-center gap-1 mt-1.5'>
               <ExternalLink size={8} className='text-[#f0ede6]/20' />
@@ -272,8 +254,6 @@ export default function ProductCard({
               </span>
             </div>
           )}
-
-          {/* Condition / Status pills */}
           {!compact && (item.condition || item.status) && (
             <div className='flex gap-1 mt-2 flex-wrap'>
               {item.condition && (
@@ -283,11 +263,7 @@ export default function ProductCard({
               )}
               {item.status && (
                 <span
-                  className={`text-[8px] px-1.5 py-0.5 rounded border ${
-                    item.status === "unopened"
-                      ? "bg-blue-500/10 text-blue-300 border-blue-400/20"
-                      : "bg-[rgba(148,163,184,0.08)] text-slate-400 border-slate-500/20"
-                  }`}
+                  className={`text-[8px] px-1.5 py-0.5 rounded border ${item.status === "unopened" ? "bg-blue-500/10 text-blue-300 border-blue-400/20" : "bg-[rgba(148,163,184,0.08)] text-slate-400 border-slate-500/20"}`}
                 >
                   {item.status}
                 </span>
