@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0d0d0f;
+  --foreground: #f0ede6;
+  --neon-red: #ff2d2d;
+  --neon-red-glow: rgba(255, 45, 45, 0.4);
+  --beige: #f5f5dc;
+  --beige-dim: rgba(245, 245, 220, 0.7);
+  --charcoal: #141418;
+  --charcoal-light: #1e1e24;
+  --charcoal-mid: #2a2a32;
+  --glass-bg: rgba(20, 20, 24, 0.7);
+  --glass-border: rgba(245, 245, 220, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-neon-red: var(--neon-red);
+  --color-beige: var(--beige);
+  --color-charcoal: var(--charcoal);
+  --color-charcoal-light: var(--charcoal-light);
+  --color-charcoal-mid: var(--charcoal-mid);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Holographic shimmer overlay */
+@keyframes holo-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.holo-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 45, 45, 0.15) 30%,
+    rgba(245, 245, 220, 0.25) 40%,
+    rgba(100, 200, 255, 0.15) 50%,
+    rgba(255, 100, 200, 0.15) 60%,
+    transparent 70%
+  );
+  background-size: 200% 200%;
+  animation: holo-shift 3s ease infinite;
+}
+
+/* Neon glow text */
+.neon-red {
+  color: var(--neon-red);
+  text-shadow: 0 0 10px var(--neon-red-glow), 0 0 20px var(--neon-red-glow);
+}
+
+.neon-beige {
+  color: var(--beige);
+  text-shadow: 0 0 8px rgba(245, 245, 220, 0.3);
+}
+
+/* Glassmorphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-strong {
+  background: rgba(20, 20, 24, 0.85);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid rgba(245, 245, 220, 0.12);
+}
+
+/* Scanline overlay for CRT effect */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Live pulse dot */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.live-dot {
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+
+/* Gradient borders */
+.border-gradient-red {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+.border-gradient-red::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--neon-red), transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--charcoal); }
+::-webkit-scrollbar-thumb { background: var(--neon-red); border-radius: 2px; }
+
+/* Safe zone for mobile bottom nav */
+.pb-safe { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* Card 3D perspective */
+.card-3d-wrapper { perspective: 1000px; }
+
+/* Ticker animation */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-inner {
+  animation: ticker-scroll 30s linear infinite;
+}
+.ticker-inner:hover { animation-play-state: paused; }
