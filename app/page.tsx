@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Layers,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import LiveTradeTicker from "@/components/LiveTradeTicker";
 import CollectibleCard, { CollectibleItem } from "@/components/CollectibleCard";
@@ -126,7 +127,7 @@ export default function HomePage() {
         >
           <span className='live-dot w-1.5 h-1.5 rounded-full bg-[#ff2d2d] inline-block' />
           <span className='text-[10px] font-mono text-[#ff2d2d] uppercase tracking-widest'>
-            Hong Kong&apos;s Collector Portal
+            Hong Kong's Collector Portal
           </span>
         </motion.div>
 
@@ -299,6 +300,48 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* Card Finder CTA */}
+      <section className='px-4 pb-6'>
+        <Link href='/aggregator'>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className='relative p-5 rounded-2xl overflow-hidden cursor-pointer'
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(96,165,250,0.1), rgba(255,45,45,0.05))",
+              border: "1px solid rgba(96,165,250,0.25)",
+            }}
+          >
+            <div className='absolute inset-0 holo-shimmer opacity-10 pointer-events-none' />
+            <div className='relative flex items-center justify-between'>
+              <div>
+                <p className='text-[10px] font-mono uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1'>
+                  <Search size={10} /> Card Finder
+                </p>
+                <h3 className='text-lg font-black text-[#f5f5dc] leading-tight'>
+                  Find Cheap Pokémon Deals
+                </h3>
+                <p className='text-xs text-[#f0ede6]/50 mt-1'>
+                  Aggregated from Carousell, Facebook & more in HK
+                </p>
+              </div>
+              <motion.div
+                animate={{ x: [0, 5, 0] }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                  ease: "easeInOut",
+                }}
+                className='text-4xl'
+              >
+                🔍
+              </motion.div>
+            </div>
+          </motion.div>
+        </Link>
       </section>
 
       {/* Lucky Draw CTA Banner */}

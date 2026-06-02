@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Swords, Package, Ticket, MapPin } from "lucide-react";
+import { Home, Swords, Package, Ticket, MapPin, Search } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Portal", icon: Home },
+  { href: "/aggregator", label: "Find", icon: Search },
   { href: "/trade", label: "Arena", icon: Swords },
   { href: "/vault", label: "Vault", icon: Package },
   { href: "/draw", label: "Lucky", icon: Ticket },
@@ -21,9 +22,10 @@ export default function BottomNav() {
       className='fixed bottom-0 left-0 right-0 z-50 glass-strong'
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className='flex items-center justify-around h-16 px-2 max-w-lg mx-auto'>
+      <div className='flex items-center justify-around h-16 px-1 max-w-lg mx-auto'>
         {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
+          const active =
+            pathname === href || (href !== "/" && pathname.startsWith(href));
           return (
             <Link
               key={href}
@@ -43,7 +45,7 @@ export default function BottomNav() {
                   />
                 )}
                 <Icon
-                  size={20}
+                  size={18}
                   strokeWidth={active ? 2 : 1.5}
                   className={`transition-all duration-200 relative z-10 ${
                     active
@@ -52,7 +54,7 @@ export default function BottomNav() {
                   }`}
                 />
                 <span
-                  className={`text-[10px] font-medium tracking-wide relative z-10 transition-all duration-200 ${
+                  className={`text-[9px] font-medium tracking-wide relative z-10 transition-all duration-200 ${
                     active ? "text-[#ff2d2d]" : "text-[#f0ede6]/40"
                   }`}
                 >
