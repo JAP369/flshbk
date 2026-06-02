@@ -1,7 +1,9 @@
-import { createClient } from "@/lib/supabase/client";
 import type { Achievement, UserAchievement, Profile } from "@/lib/types/database";
 
-const supabase = createClient();
+async function getSupabase() {
+  const mod = await import("@/lib/supabase/client");
+  return mod.createClient();
+}
 
 export function getLevelInfo(xp: number) {
   const level = Math.floor(xp / 500) + 1;
@@ -36,6 +38,7 @@ export const XP_REWARDS = {
 };
 
 export async function awardXP(userId: string, xpAmount: number) {
+  const supabase = await getSupabase();
   const { data: profile } = await supabase
     .from("profiles")
     .select("xp, level")
@@ -57,6 +60,7 @@ export async function awardXP(userId: string, xpAmount: number) {
 }
 
 export async function updateStreak(userId: string) {
+  const supabase = await getSupabase();
   const { data: profile } = await supabase
     .from("profiles")
     .select("streak_count, last_active, xp")
@@ -112,12 +116,8 @@ export async function updateStreak(userId: string) {
 }
 
 export async function checkAchievements(userId: string) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-
+  const supabase = await getSupabase();
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).single();
   if (!profile) return [];
 
   const { data: allAchievements } = await supabase.from("achievements").select("*");
@@ -188,6 +188,7 @@ export async function checkAchievements(userId: string) {
 }
 
 export async function getLeaderboard(limit = 20) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url, level, xp, verified_trades, is_verified")
@@ -199,6 +200,7 @@ export async function getLeaderboard(limit = 20) {
 }
 
 export async function getUserAchievements(userId: string) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("user_achievements")
     .select("*, achievements(*)")

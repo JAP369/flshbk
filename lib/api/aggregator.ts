@@ -1,7 +1,9 @@
-import { createClient } from "@/lib/supabase/client";
 import type { AggregatorListing, ItemCategory } from "@/lib/types/database";
 
-const supabase = createClient();
+async function getSupabase() {
+  const mod = await import("@/lib/supabase/client");
+  return mod.createClient();
+}
 
 export interface AggregatorFilters {
   category?: ItemCategory;
@@ -16,9 +18,8 @@ export interface AggregatorFilters {
 }
 
 export async function getAggregatorListings(filters: AggregatorFilters = {}) {
-  let query = supabase
-    .from("aggregator_listings")
-    .select("*");
+  const supabase = await getSupabase();
+  let query = supabase.from("aggregator_listings").select("*");
 
   if (filters.category) query = query.eq("category", filters.category);
   if (filters.source) query = query.eq("source", filters.source);
@@ -57,6 +58,7 @@ export async function getAggregatorListings(filters: AggregatorFilters = {}) {
 }
 
 export async function getDeals(limit = 20) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("aggregator_listings")
     .select("*")
@@ -68,6 +70,7 @@ export async function getDeals(limit = 20) {
 }
 
 export async function getSources() {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("aggregator_listings")
     .select("source")

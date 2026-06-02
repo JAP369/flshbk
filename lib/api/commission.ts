@@ -1,9 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
 import type { Trade } from "@/lib/types/database";
 
-const supabase = createClient();
+async function getSupabase() {
+  const mod = await import("@/lib/supabase/client");
+  return mod.createClient();
+}
 
-export const COMMISSION_RATE = 0.025; // 2.5%
+export const COMMISSION_RATE = 0.025;
 export const NEXUS_BASE_REWARD = 10;
 export const NEXUS_PER_HKD = 0.01;
 
@@ -25,24 +27,14 @@ export function calculateCommission(tradeValueHKD: number): CommissionBreakdown 
 }
 
 export async function completeTrade(tradeId: string, userId: string) {
-  // Fetch trade
-  const { data: trade, error } = await supabase
-    .from("trades")
-    .select("*")
-    .eq("id", tradeId)
-    .single();
-
+  const supabase = await getSupabase();
+  const { data: trade, error } = await supabase.from("trades").select("*").eq("id", tradeId).single();
   if (error || !trade) throw new Error("Trade not found");
-
-  // Verify user is a participant
-  if (trade.initiator_id !== userId && trade.receiver_id !== userId) {
-    throw new Error("Not authorized");
-  }
+  if (trade.initiator_id !== userId && trade.receiver_id !== userId) throw new Error("Not authorized");
 
   const tradeValue = trade.initiator_cash_topup_hkd + trade.receiver_cash_topup_hkd;
   const breakdown = calculateCommission(tradeValue);
 
-  // Update trade status
   const { data: updatedTrade, error: updateError } = await supabase
     .from("trades")
     .update({
@@ -57,19 +49,14 @@ export async function completeTrade(tradeId: string, userId: string) {
 
   if (updateError) throw updateError;
 
-  // Award XP and NEXUS to both parties
   for (const participantId of [trade.initiator_id, trade.receiver_id]) {
     await supabase.rpc("award_xp_and_nexus", {
       uid: participantId,
       xp_amount: breakdown.xpEarned,
       nexus_amount: breakdown.nexusEarned,
     });
-
-    // Increment verified trades count
-    await supabase.rpc("increment_verified_trades", { uid: participantId });
   }
 
-  // Mark listings as sold if applicable
   if (trade.initiator_listing_id) {
     await supabase.from("listings").update({ status: "sold" }).eq("id", trade.initiator_listing_id);
   }
@@ -81,6 +68,7 @@ export async function completeTrade(tradeId: string, userId: string) {
 }
 
 export async function getUserTradeStats(userId: string) {
+  const supabase = await getSupabase();
   const { data: trades, error } = await supabase
     .from("trades")
     .select("commission_hkd, nexus_earned, status")
@@ -97,12 +85,8 @@ export async function getUserTradeStats(userId: string) {
 }
 
 export async function getNexusBalance(userId: string): Promise<number> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("nexus_tokens")
-    .eq("id", userId)
-    .single();
-
+  const supabase = await getSupabase();
+  const { data, error } = await supabase.from("profiles").select("nexus_tokens").eq("id", userId).single();
   if (error) throw error;
   return data?.nexus_tokens || 0;
 }
@@ -110,11 +94,7 @@ export async function getNexusBalance(userId: string): Promise<number> {
 export async function spendNexus(userId: string, amount: number): Promise<boolean> {
   const balance = await getNexusBalance(userId);
   if (balance < amount) return false;
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ nexus_tokens: balance - amount })
-    .eq("id", userId);
-
+  const supabase = await getSupabase();
+  const { error } = await supabase.from("profiles").update({ nexus_tokens: balance - amount }).eq("id", userId);
   return !error;
 }

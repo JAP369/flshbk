@@ -1,7 +1,9 @@
-import { createClient } from "@/lib/supabase/client";
 import type { Listing, ListingType, ItemCategory, Rarity } from "@/lib/types/database";
 
-const supabase = createClient();
+async function getSupabase() {
+  const mod = await import("@/lib/supabase/client");
+  return mod.createClient();
+}
 
 export interface ListingFilters {
   category?: ItemCategory;
@@ -16,6 +18,7 @@ export interface ListingFilters {
 }
 
 export async function getListings(filters: ListingFilters = {}) {
+  const supabase = await getSupabase();
   let query = supabase
     .from("listings")
     .select("*, profiles:seller_id(username, display_name, avatar_url, is_verified, level)")
@@ -58,6 +61,7 @@ export async function getListings(filters: ListingFilters = {}) {
 }
 
 export async function getListingById(id: string) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("listings")
     .select("*, profiles:seller_id(*)")
@@ -65,7 +69,6 @@ export async function getListingById(id: string) {
     .single();
   if (error) throw error;
 
-  // Increment view count
   await supabase
     .from("listings")
     .update({ views_count: (data?.views_count || 0) + 1 })
@@ -75,6 +78,7 @@ export async function getListingById(id: string) {
 }
 
 export async function createListing(listing: Omit<Listing, "id" | "created_at" | "updated_at" | "views_count" | "likes_count">) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("listings")
     .insert(listing)
@@ -85,6 +89,7 @@ export async function createListing(listing: Omit<Listing, "id" | "created_at" |
 }
 
 export async function updateListing(id: string, updates: Partial<Listing>) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("listings")
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -96,11 +101,13 @@ export async function updateListing(id: string, updates: Partial<Listing>) {
 }
 
 export async function deleteListing(id: string) {
+  const supabase = await getSupabase();
   const { error } = await supabase.from("listings").delete().eq("id", id);
   if (error) throw error;
 }
 
 export async function toggleLike(listingId: string, userId: string) {
+  const supabase = await getSupabase();
   const { data: existing } = await supabase
     .from("likes")
     .select("id")
@@ -110,11 +117,9 @@ export async function toggleLike(listingId: string, userId: string) {
 
   if (existing) {
     await supabase.from("likes").delete().eq("id", existing.id);
-    await supabase.rpc("decrement_listing_likes", { lid: listingId });
     return false;
   } else {
     await supabase.from("likes").insert({ user_id: userId, listing_id: listingId });
-    await supabase.rpc("increment_listing_likes", { lid: listingId });
     return true;
   }
 }

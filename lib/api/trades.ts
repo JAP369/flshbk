@@ -1,7 +1,9 @@
-import { createClient } from "@/lib/supabase/client";
 import type { Trade, TradeStatus } from "@/lib/types/database";
 
-const supabase = createClient();
+async function getSupabase() {
+  const mod = await import("@/lib/supabase/client");
+  return mod.createClient();
+}
 
 const COMMISSION_RATE = 0.025;
 const NEXUS_BASE = 10;
@@ -16,6 +18,7 @@ export async function createTrade(trade: {
   receiverCashTopup?: number;
   notes?: string;
 }) {
+  const supabase = await getSupabase();
   const totalValue = (trade.initiatorCashTopup || 0) + (trade.receiverCashTopup || 0);
   const commission = Math.round(totalValue * COMMISSION_RATE * 100) / 100;
   const nexusEarned = NEXUS_BASE + Math.floor(totalValue * NEXUS_PER_HKD);
@@ -42,6 +45,7 @@ export async function createTrade(trade: {
 }
 
 export async function updateTradeStatus(tradeId: string, status: TradeStatus) {
+  const supabase = await getSupabase();
   const updates: Partial<Trade> = { status };
   if (status === "completed") {
     updates.completed_at = new Date().toISOString();
@@ -55,29 +59,11 @@ export async function updateTradeStatus(tradeId: string, status: TradeStatus) {
     .single();
 
   if (error) throw error;
-
-  // If completed, award XP and nexus tokens
-  if (status === "completed" && data) {
-    await awardTradeRewards(data);
-  }
-
   return data as Trade;
 }
 
-async function awardTradeRewards(trade: Trade) {
-  const xpGain = 50 + Math.floor(trade.commission_hkd * 0.5);
-  const nexusGain = trade.nexus_earned;
-
-  for (const userId of [trade.initiator_id, trade.receiver_id]) {
-    await supabase.rpc("award_xp_and_nexus", {
-      uid: userId,
-      xp_amount: xpGain,
-      nexus_amount: nexusGain,
-    });
-  }
-}
-
 export async function getUserTrades(userId: string) {
+  const supabase = await getSupabase();
   const { data, error } = await supabase
     .from("trades")
     .select("*, initiator:initiator_id(username, display_name, avatar_url), receiver:receiver_id(username, display_name, avatar_url)")
