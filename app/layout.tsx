@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/BottomNav";
+import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/contexts/AuthContext";
+import BottomNav from "@/components/BottomNav";
 import DevAuthButton from "@/components/DevAuthButton";
 
 const geistSans = Geist({
@@ -46,17 +47,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang='en'
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className='min-h-full flex flex-col bg-[#0d0d0f] text-[#f0ede6]'>
-        <AuthProvider>
-          <DevAuthButton />
-          <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
-          <BottomNav />
-        </AuthProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html
+        lang='en'
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      >
+        <body className='min-h-full flex flex-col bg-[#0d0d0f] text-[#f0ede6]'>
+          <AuthProvider>
+            <DevAuthButton />
+            <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
+            <BottomNav />
+          </AuthProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

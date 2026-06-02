@@ -1,129 +1,58 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-  useCallback,
-} from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createContext, useContext, ReactNode } from "react";
+import { useUser, useAuth as useClerkAuth } from "@clerk/nextjs";
 import type { Profile } from "@/lib/types/database";
 
 interface AuthContextValue {
   user: Profile | null;
   loading: boolean;
-  signUp: (
-    email: string,
-    password: string,
-    username: string,
-    displayName: string,
-  ) => Promise<{ error: string | null }>;
-  signIn: (
-    email: string,
-    password: string,
-  ) => Promise<{ error: string | null }>;
+  isAuthenticated: boolean;
+  clerkUserId: string | null;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
-  signUp: async () => ({ error: null }),
-  signIn: async () => ({ error: null }),
+  isAuthenticated: false,
+  clerkUserId: null,
   signOut: async () => {},
-  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const { user: clerkUser, isLoaded } = useUser();
+  const { signOut: clerkSignOut } = useClerkAuth();
 
-  const fetchProfile = useCallback(
-    async (userId: string) => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-      if (!error && data) {
-        setUser(data as Profile);
+  const profile: Profile | null = clerkUser
+    ? {
+        id: clerkUser.id,
+        email: clerkUser.primaryEmailAddress?.emailAddress || "",
+        username: clerkUser.username || clerkUser.id.slice(0, 8),
+        display_name: clerkUser.fullName || clerkUser.username || "User",
+        avatar_url: clerkUser.imageUrl,
+        bio: null,
+        level: 1,
+        xp: 0,
+        nexus_tokens: 0,
+        verified_trades: 0,
+        is_verified: false,
+        streak_count: 0,
+        last_active: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
-      return data;
-    },
-    [supabase],
-  );
-
-  useEffect(() => {
-    const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    };
-    init();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, fetchProfile]);
-
-  const signUp = async (
-    email: string,
-    password: string,
-    username: string,
-    displayName: string,
-  ) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username, display_name: displayName },
-      },
-    });
-    return { error: error?.message ?? null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error: error?.message ?? null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-  };
-
-  const refreshProfile = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.user) {
-      await fetchProfile(session.user.id);
-    }
-  };
+    : null;
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signUp, signIn, signOut, refreshProfile }}
+      value={{
+        user: profile,
+        loading: !isLoaded,
+        isAuthenticated: !!clerkUser,
+        clerkUserId: clerkUser?.id ?? null,
+        signOut: clerkSignOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

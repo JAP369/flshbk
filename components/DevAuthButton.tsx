@@ -3,40 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { X, ChevronDown, LogOut, Zap } from "lucide-react";
-
-const DEV_USERS = [
-  {
-    id: "dev-001",
-    username: "vault_rex",
-    displayName: "Vault Rex",
-    avatar: "🦁",
-    level: 7,
-    nexus_tokens: 2840,
-    verified_trades: 14,
-    is_verified: true,
-  },
-  {
-    id: "dev-002",
-    username: "chase_queen",
-    displayName: "Chase Queen",
-    avatar: "👑",
-    level: 12,
-    nexus_tokens: 8200,
-    verified_trades: 31,
-    is_verified: true,
-  },
-  {
-    id: "dev-003",
-    username: "newbie_collector",
-    displayName: "Newbie",
-    avatar: "🐣",
-    level: 1,
-    nexus_tokens: 40,
-    verified_trades: 0,
-    is_verified: false,
-  },
-];
+import { X, ChevronDown, LogOut, Zap, User } from "lucide-react";
+import Link from "next/link";
 
 // Only renders in development builds
 export default function DevAuthButton() {
@@ -46,12 +14,8 @@ export default function DevAuthButton() {
 }
 
 function DevAuthPanel() {
-  const { user, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, loading } = useAuth();
   const [open, setOpen] = useState(false);
-
-  // Map dev user to profile shape for display
-  const currentUser = user;
-  const isAuthenticated = !!user;
 
   return (
     <>
@@ -69,13 +33,15 @@ function DevAuthPanel() {
         }}
       >
         <span>DEV</span>
-        {isAuthenticated ? (
+        {loading ? (
+          <span className='text-white/50'>loading</span>
+        ) : isAuthenticated ? (
           <>
             <span className='text-white/70'>
-              {currentUser?.display_name?.slice(0, 1) || "👤"}
+              {user?.display_name?.slice(0, 1) || "👤"}
             </span>
             <span className='max-w-[60px] truncate text-white/80'>
-              {currentUser?.username}
+              {user?.username}
             </span>
           </>
         ) : (
@@ -92,7 +58,6 @@ function DevAuthPanel() {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -101,7 +66,6 @@ function DevAuthPanel() {
               onClick={() => setOpen(false)}
             />
 
-            {/* Panel */}
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: -8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -114,7 +78,6 @@ function DevAuthPanel() {
                 backdropFilter: "blur(20px)",
               }}
             >
-              {/* Header */}
               <div
                 className='flex items-center justify-between px-3 py-2.5'
                 style={{ borderBottom: "1px solid rgba(255,200,0,0.15)" }}
@@ -130,7 +93,7 @@ function DevAuthPanel() {
                     DEV MODE
                   </span>
                   <span className='text-[9px] text-white/30 font-mono'>
-                    bypass auth
+                    Clerk auth
                   </span>
                 </div>
                 <button onClick={() => setOpen(false)}>
@@ -138,8 +101,7 @@ function DevAuthPanel() {
                 </button>
               </div>
 
-              {/* Current user */}
-              {isAuthenticated && currentUser && (
+              {isAuthenticated && user && (
                 <div
                   className='px-3 py-2.5'
                   style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
@@ -147,88 +109,73 @@ function DevAuthPanel() {
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center gap-2'>
                       <span className='text-xl'>
-                        {currentUser.display_name?.slice(0, 1) || "👤"}
+                        {user.display_name?.slice(0, 1) || "👤"}
                       </span>
                       <div>
                         <p className='text-xs font-bold text-white leading-none'>
-                          {currentUser.display_name}
+                          {user.display_name}
                         </p>
                         <p className='text-[9px] text-white/40 font-mono mt-0.5'>
-                          @{currentUser.username} · Lvl {currentUser.level}
+                          @{user.username} · Lvl {user.level}
                         </p>
                       </div>
                     </div>
                     <div className='flex items-center gap-1 text-[10px] font-mono text-[#ff2d2d]'>
                       <Zap size={10} />
-                      {currentUser.nexus_tokens}
+                      {user.nexus_tokens}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Login as… */}
               <div className='px-3 py-2'>
                 <p className='text-[9px] font-mono uppercase tracking-widest text-white/25 mb-1.5'>
-                  Quick Login…
+                  Quick Actions
                 </p>
                 <div className='flex flex-col gap-1'>
-                  {DEV_USERS.map((u) => (
+                  {!isAuthenticated ? (
+                    <>
+                      <Link href='/login' onClick={() => setOpen(false)}>
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          className='w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left hover:bg-white/5 border border-transparent'
+                        >
+                          <User size={14} className='text-white/50' />
+                          <span className='text-xs text-white/70'>
+                            Sign In (Clerk)
+                          </span>
+                        </motion.button>
+                      </Link>
+                      <Link href='/signup' onClick={() => setOpen(false)}>
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          className='w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left hover:bg-white/5 border border-transparent'
+                        >
+                          <User size={14} className='text-white/50' />
+                          <span className='text-xs text-white/70'>
+                            Sign Up (Clerk)
+                          </span>
+                        </motion.button>
+                      </Link>
+                    </>
+                  ) : (
                     <motion.button
-                      key={u.id}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => {
-                        // In dev mode, we just show the panel
-                        // Real auth goes through /login
+                        signOut();
                         setOpen(false);
                       }}
-                      className={`flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-all ${
-                        currentUser?.id === u.id
-                          ? "bg-[rgba(255,200,0,0.1)] border border-[rgba(255,200,0,0.25)]"
-                          : "hover:bg-white/5 border border-transparent"
-                      }`}
+                      className='w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-red-400'
+                      style={{
+                        background: "rgba(255,45,45,0.1)",
+                        border: "1px solid rgba(255,45,45,0.2)",
+                      }}
                     >
-                      <span className='text-base'>{u.avatar}</span>
-                      <div className='flex-1 min-w-0'>
-                        <p className='text-xs font-semibold text-white/90 truncate'>
-                          {u.displayName}
-                        </p>
-                        <p className='text-[9px] text-white/35 font-mono'>
-                          Lvl {u.level} · {u.verified_trades} trades{" "}
-                          {u.is_verified ? "· ✓ Verified" : ""}
-                        </p>
-                      </div>
-                      {currentUser?.id === u.id && (
-                        <span className='text-[9px] text-[#ffc800] font-mono shrink-0'>
-                          active
-                        </span>
-                      )}
+                      <LogOut size={12} /> Sign Out
                     </motion.button>
-                  ))}
+                  )}
                 </div>
               </div>
-
-              {/* Logout */}
-              {isAuthenticated && (
-                <div
-                  className='px-3 pb-3'
-                  style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
-                >
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => {
-                      signOut();
-                      setOpen(false);
-                    }}
-                    className='mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-red-400'
-                    style={{
-                      background: "rgba(255,45,45,0.1)",
-                      border: "1px solid rgba(255,45,45,0.2)",
-                    }}
-                  >
-                    <LogOut size={12} /> Log Out
-                  </motion.button>
-                </div>
-              )}
             </motion.div>
           </>
         )}

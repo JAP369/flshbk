@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
 
@@ -30,20 +30,18 @@ export default function LoginPage() {
 
   return (
     <main className='flex flex-col min-h-screen items-center justify-center px-6'>
-      {/* Logo */}
       <div className='text-center mb-6'>
         <h1 className='text-4xl font-black tracking-tight leading-none mb-2'>
           <span className='text-[#f5f5dc]'>FLSH</span>
           <span className='neon-red'>BK</span>
         </h1>
         <p className='text-xs text-[#f0ede6]/40 font-mono'>
-          Welcome back, collector
+          Join the collector community
         </p>
       </div>
 
-      {/* Clerk Sign In */}
       <div className='w-full max-w-sm'>
-        <SignIn
+        <SignUp
           appearance={{
             elements: {
               rootBox: "w-full",
@@ -60,18 +58,14 @@ export default function LoginPage() {
               dividerLine: "bg-[rgba(245,245,220,0.1)]",
               dividerText: "text-[#f0ede6]/30",
               formFieldLabel: "text-[#f0ede6]/50",
-              identityPreviewText: "text-[#f5f5dc]",
-              identityPreviewEditButton: "text-[#ff2d2d]",
             },
           }}
           routing='path'
-          path='/login'
-          signUpUrl='/signup'
-          forceRedirectUrl='/'
+          path='/signup'
+          signInUrl='/login'
         />
       </div>
 
-      {/* Skip for now */}
       <Link href='/'>
         <p className='text-center text-[#f0ede6]/20 text-[10px] font-mono mt-6 hover:text-[#f0ede6]/40 transition-colors'>
           Continue as guest →
