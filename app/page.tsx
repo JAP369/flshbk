@@ -1,25 +1,27 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowRight,
   Zap,
   Shield,
   TrendingUp,
-  Layers,
-  ChevronRight,
   Search,
+  BarChart3,
+  Bell,
+  Star,
+  ChevronRight,
 } from "lucide-react";
 import LiveTradeTicker from "@/components/LiveTradeTicker";
 import CollectibleCard, { CollectibleItem } from "@/components/CollectibleCard";
+import { CATEGORIES } from "@/lib/data/categories";
 
 const featuredItems: CollectibleItem[] = [
   {
     id: "1",
     name: "Labubu Macaron Series",
-    series: "Pop Mart × How2work",
+    series: "Pop Mart x How2work",
     rarity: "chase",
     price: "HKD 3,800",
     priceChange: 24.5,
@@ -51,7 +53,7 @@ const featuredItems: CollectibleItem[] = [
   {
     id: "4",
     name: "Molly Zodiac Series",
-    series: "Pop Mart × Kenny Wong",
+    series: "Pop Mart x Kenny Wong",
     rarity: "rare",
     price: "HKD 1,600",
     priceChange: -3.2,
@@ -66,38 +68,11 @@ const stats = [
   { label: "Jackpot Pool", value: "HKD 42K", icon: TrendingUp },
 ];
 
-const features = [
-  {
-    icon: Shield,
-    title: "Verified Trade",
-    desc: "Secure trading of Pop Mart (Labubu/Molly) and vintage LEGO with dual QR handshake at Safe-Zone partner shops.",
-    href: "/trade",
-    cta: "Enter Arena",
-  },
-  {
-    icon: Layers,
-    title: "Digital Shelf",
-    desc: "Virtual showcase for your collection. 3D card tilt, PSA grades, box condition, and community verification badges.",
-    href: "/vault",
-    cta: "My Vault",
-  },
-  {
-    icon: TrendingUp,
-    title: "Rarity Tracker",
-    desc: "Real-time data on chase figures and market prices. Live floor price feeds for Labubu, Molly, and retiring LEGO sets.",
-    href: "/vault",
-    cta: "Track Now",
-  },
-];
-
 export default function HomePage() {
-  const [activeFeature, setActiveFeature] = useState(0);
-
   return (
     <main className='flex flex-col min-h-screen'>
       {/* Hero */}
-      <section className='relative flex flex-col items-center justify-center min-h-[55vh] px-4 pt-12 overflow-hidden text-center'>
-        {/* Background glow orbs */}
+      <section className='relative flex flex-col items-center justify-center min-h-[40vh] px-4 pt-8 overflow-hidden text-center'>
         <div className='absolute inset-0 pointer-events-none overflow-hidden'>
           <div
             className='absolute w-80 h-80 rounded-full blur-3xl opacity-20'
@@ -118,12 +93,11 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Tagline chip */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className='flex items-center gap-2 px-3 py-1 mb-5 rounded-full glass border border-[rgba(255,45,45,0.25)]'
+          className='flex items-center gap-2 px-3 py-1 mb-4 rounded-full glass border border-[rgba(255,45,45,0.25)]'
         >
           <span className='live-dot w-1.5 h-1.5 rounded-full bg-[#ff2d2d] inline-block' />
           <span className='text-[10px] font-mono text-[#ff2d2d] uppercase tracking-widest'>
@@ -131,12 +105,11 @@ export default function HomePage() {
           </span>
         </motion.div>
 
-        {/* Logo / Name */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className='text-6xl font-black tracking-tight leading-none mb-3'
+          className='text-5xl font-black tracking-tight leading-none mb-2'
         >
           <span className='text-[#f5f5dc]'>FLSH</span>
           <span className='neon-red'>BK</span>
@@ -146,49 +119,18 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className='text-sm text-[#f0ede6]/50 max-w-xs leading-relaxed mb-6'
+          className='text-sm text-[#f0ede6]/50 max-w-xs leading-relaxed mb-4'
         >
-          Trade, collect, and verify rare Pop Mart figures, vintage LEGO, and
-          PSA-graded cards — powered by community trust.
+          Trade, collect, and verify rare collectibles across multiple
+          categories — powered by community trust.
         </motion.p>
-
-        {/* CTA buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className='flex gap-3 flex-wrap justify-center'
-        >
-          <Link href='/trade'>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
-              className='flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold text-white'
-              style={{
-                background: "linear-gradient(135deg, #ff2d2d, #cc0000)",
-                boxShadow: "0 0 20px rgba(255,45,45,0.4)",
-              }}
-            >
-              Enter Arena <ArrowRight size={14} />
-            </motion.button>
-          </Link>
-          <Link href='/vault'>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
-              className='flex items-center gap-2 px-6 py-3 rounded-full text-sm font-bold glass border border-[rgba(245,245,220,0.15)] text-[#f5f5dc]'
-            >
-              My Vault
-            </motion.button>
-          </Link>
-        </motion.div>
 
         {/* Stats row */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
-          className='flex gap-4 mt-8 pt-6 border-t border-[rgba(245,245,220,0.06)] w-full max-w-sm justify-around'
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className='flex gap-4 pt-4 border-t border-[rgba(245,245,220,0.06)] w-full max-w-sm justify-around'
         >
           {stats.map(({ label, value, icon: Icon }) => (
             <div key={label} className='flex flex-col items-center gap-1'>
@@ -206,79 +148,73 @@ export default function HomePage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.5 }}
       >
         <LiveTradeTicker />
       </motion.div>
 
-      {/* Feature Highlight */}
-      <section className='px-4 pt-8 pb-4'>
-        <h2 className='text-xs font-mono uppercase tracking-widest text-[#f0ede6]/30 mb-4'>
-          What is FLSHBK?
-        </h2>
-        <div className='flex flex-col gap-3'>
-          {features.map((f, i) => (
+      {/* Category Cards */}
+      <section className='px-4 pt-6 pb-4'>
+        <div className='flex items-center justify-between mb-3'>
+          <h2 className='text-xs font-mono uppercase tracking-widest text-[#f0ede6]/30'>
+            Categories
+          </h2>
+          <Link href='/settings'>
+            <span className='text-[10px] text-[#ff2d2d] font-mono flex items-center gap-1'>
+              <Bell size={10} /> Alerts
+            </span>
+          </Link>
+        </div>
+
+        <div className='grid grid-cols-2 gap-2'>
+          {CATEGORIES.map((cat, i) => (
             <motion.div
-              key={f.title}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * i + 0.7 }}
-              onClick={() => setActiveFeature(i)}
-              className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 glass ${
-                activeFeature === i
-                  ? "border border-[rgba(255,45,45,0.3)]"
-                  : "border border-[rgba(245,245,220,0.05)]"
-              }`}
-              style={
-                activeFeature === i
-                  ? { boxShadow: "0 0 20px rgba(255,45,45,0.1)" }
-                  : {}
-              }
+              key={cat.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * i + 0.6 }}
             >
-              <div className='flex items-start gap-3'>
+              <Link href={cat.href}>
                 <div
-                  className='w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5'
-                  style={{ background: "rgba(255,45,45,0.12)" }}
+                  className='relative p-3 rounded-2xl overflow-hidden cursor-pointer h-full'
+                  style={{
+                    background: `linear-gradient(135deg, ${cat.color}15, ${cat.color}05)`,
+                    border: `1px solid ${cat.color}25`,
+                  }}
                 >
-                  <f.icon size={16} className='text-[#ff2d2d]' />
-                </div>
-                <div className='flex-1 min-w-0'>
-                  <div className='flex items-center justify-between'>
-                    <h3 className='font-bold text-[#f5f5dc] text-sm'>
-                      {f.title}
-                    </h3>
-                    <Link href={f.href}>
-                      <motion.div
-                        whileTap={{ scale: 0.9 }}
-                        className='flex items-center gap-1 text-[10px] text-[#ff2d2d] font-mono'
-                      >
-                        {f.cta} <ChevronRight size={10} />
-                      </motion.div>
-                    </Link>
+                  <div className='flex items-start justify-between mb-2'>
+                    <span className='text-2xl'>{cat.emoji}</span>
+                    <ArrowRight
+                      size={12}
+                      style={{ color: cat.color }}
+                      className='mt-1'
+                    />
                   </div>
-                  <AnimatePresence>
-                    {activeFeature === i && (
-                      <motion.p
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className='text-xs text-[#f0ede6]/50 leading-relaxed mt-1.5 overflow-hidden'
-                      >
-                        {f.desc}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
+                  <h3 className='text-sm font-bold text-[#f5f5dc] leading-tight'>
+                    {cat.name}
+                  </h3>
+                  <p className='text-[9px] text-[#f0ede6]/40 mt-0.5 line-clamp-2'>
+                    {cat.description}
+                  </p>
+                  <div className='flex items-center gap-1 mt-2'>
+                    <BarChart3 size={9} style={{ color: cat.color }} />
+                    <span
+                      className='text-[9px] font-mono'
+                      style={{ color: cat.color }}
+                    >
+                      {cat.marketplaces.length} sources
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* Featured Items */}
-      <section className='px-4 pt-6 pb-8'>
-        <div className='flex items-center justify-between mb-4'>
+      <section className='px-4 pt-4 pb-4'>
+        <div className='flex items-center justify-between mb-3'>
           <h2 className='text-xs font-mono uppercase tracking-widest text-[#f0ede6]/30'>
             Hot Right Now
           </h2>
@@ -294,7 +230,7 @@ export default function HomePage() {
               key={item.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * i + 0.9 }}
+              transition={{ delay: 0.1 * i + 0.8 }}
             >
               <CollectibleCard item={item} />
             </motion.div>
@@ -302,103 +238,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Card Finder CTA */}
-      <section className='px-4 pb-6'>
-        <Link href='/aggregator'>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className='relative p-5 rounded-2xl overflow-hidden cursor-pointer'
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(96,165,250,0.1), rgba(255,45,45,0.05))",
-              border: "1px solid rgba(96,165,250,0.25)",
-            }}
-          >
-            <div className='absolute inset-0 holo-shimmer opacity-10 pointer-events-none' />
-            <div className='relative flex items-center justify-between'>
-              <div>
-                <p className='text-[10px] font-mono uppercase tracking-widest text-blue-400 mb-1 flex items-center gap-1'>
-                  <Search size={10} /> Card Finder
-                </p>
-                <h3 className='text-lg font-black text-[#f5f5dc] leading-tight'>
-                  Find Cheap Pokémon Deals
-                </h3>
-                <p className='text-xs text-[#f0ede6]/50 mt-1'>
-                  Aggregated from Carousell, Facebook & more in HK
-                </p>
-              </div>
+      {/* Quick Actions */}
+      <section className='px-4 pt-2 pb-6'>
+        <div className='grid grid-cols-3 gap-2'>
+          {[
+            {
+              icon: Search,
+              label: "Card Finder",
+              href: "/categories/pokemon",
+              color: "#fbbf24",
+            },
+            {
+              icon: Star,
+              label: "Lucky Draw",
+              href: "/draw",
+              color: "#ff2d2d",
+            },
+            {
+              icon: BarChart3,
+              label: "Leaderboard",
+              href: "/leaderboard",
+              color: "#60a5fa",
+            },
+          ].map(({ icon: Icon, label, href, color }) => (
+            <Link key={label} href={href}>
               <motion.div
-                animate={{ x: [0, 5, 0] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 2,
-                  ease: "easeInOut",
-                }}
-                className='text-4xl'
+                whileTap={{ scale: 0.95 }}
+                className='flex flex-col items-center gap-1.5 p-3 rounded-2xl glass border border-[rgba(245,245,220,0.06)] cursor-pointer'
               >
-                🔍
+                <Icon size={18} style={{ color }} />
+                <span className='text-[10px] font-bold text-[#f5f5dc]'>
+                  {label}
+                </span>
               </motion.div>
-            </div>
-          </motion.div>
-        </Link>
-      </section>
-
-      {/* Lucky Draw CTA Banner */}
-      <section className='px-4 pb-6'>
-        <Link href='/draw'>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className='relative p-5 rounded-2xl overflow-hidden cursor-pointer'
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,45,45,0.15), rgba(245,245,220,0.05))",
-              border: "1px solid rgba(255,45,45,0.25)",
-            }}
-          >
-            {/* Background shimmer */}
-            <div className='absolute inset-0 holo-shimmer opacity-20 pointer-events-none' />
-            <div className='relative flex items-center justify-between'>
-              <div>
-                <p className='text-[10px] font-mono uppercase tracking-widest text-[#ff2d2d] mb-1'>
-                  🎲 Lucky Draw
-                </p>
-                <h3 className='text-lg font-black text-[#f5f5dc] leading-tight'>
-                  Win a Be@rbrick 1000%
-                </h3>
-                <p className='text-xs text-[#f0ede6]/50 mt-1'>
-                  Pool: HKD 42,000 · 6d 14h left
-                </p>
-              </div>
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{
-                  repeat: Infinity,
-                  duration: 3,
-                  ease: "easeInOut",
-                }}
-                className='text-5xl'
-              >
-                📦
-              </motion.div>
-            </div>
-            <div className='relative mt-3 w-full h-1.5 rounded-full bg-[rgba(245,245,220,0.08)]'>
-              <motion.div
-                initial={{ width: "0%" }}
-                animate={{ width: "68%" }}
-                transition={{ duration: 1.5, delay: 1 }}
-                className='h-full rounded-full'
-                style={{
-                  background: "linear-gradient(90deg, #ff2d2d, #ff6b6b)",
-                }}
-              />
-              <span className='absolute right-0 -top-5 text-[10px] text-[#ff2d2d] font-mono'>
-                68% filled
-              </span>
-            </div>
-          </motion.div>
-        </Link>
+            </Link>
+          ))}
+        </div>
       </section>
     </main>
   );

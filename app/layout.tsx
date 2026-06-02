@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
+import CategoryNav from "@/components/CategoryNav";
 import DevAuthButton from "@/components/DevAuthButton";
 
 const geistSans = Geist({
@@ -41,7 +42,6 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-// Check if Clerk is properly configured
 function isClerkConfigured(): boolean {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const secretKey = process.env.CLERK_SECRET_KEY;
@@ -59,7 +59,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <DevAuthButton />
-      <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
+      <CategoryNav />
+      <div className='flex flex-col min-h-screen pb-safe pt-12'>{children}</div>
       <BottomNav />
     </>
   );
@@ -73,7 +74,6 @@ export default function RootLayout({
   const clerkConfigured = isClerkConfigured();
 
   if (!clerkConfigured) {
-    // Dev mode without Clerk — render without ClerkProvider
     return (
       <html
         lang='en'
