@@ -1,28 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Settings, Home } from "lucide-react";
+import { Menu, X, Settings, Home, Bell } from "lucide-react";
 import { CATEGORIES } from "@/lib/data/categories";
 
 export default function CategoryNav() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
+  // Persist and restore active tab
+  useEffect(() => {
+    const saved = localStorage.getItem("flshbk_active_tab");
+    if (saved) setActiveTab(saved);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem("flshbk_active_tab", activeTab);
+    }
+  }, [activeTab]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
+  const currentCategory = CATEGORIES.find((c) => isActive(c.href));
+
   return (
     <>
       {/* Desktop / Tablet horizontal tabs */}
-      <div className='hidden md:flex items-center gap-1 px-4 py-2 overflow-x-auto no-scrollbar'>
+      <div className='hidden md:flex items-center gap-1 px-4 py-2 overflow-x-auto no-scrollbar sticky top-0 z-30 bg-[#0d0d0f]/90 backdrop-blur-md border-b border-[rgba(245,245,220,0.04)]'>
         <Link href='/'>
           <motion.div
             whileTap={{ scale: 0.95 }}
+            onClick={() => setActiveTab("/")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               isActive("/") && !pathname.startsWith("/categories")
                 ? "bg-[rgba(255,45,45,0.15)] text-[#ff2d2d] border border-[rgba(255,45,45,0.3)]"
@@ -38,6 +54,7 @@ export default function CategoryNav() {
           <Link key={cat.id} href={cat.href}>
             <motion.div
               whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveTab(cat.href)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                 isActive(cat.href)
                   ? "border"
@@ -64,6 +81,7 @@ export default function CategoryNav() {
         <Link href='/settings'>
           <motion.div
             whileTap={{ scale: 0.95 }}
+            onClick={() => setActiveTab("/settings")}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
               isActive("/settings")
                 ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6] border border-[rgba(245,245,220,0.2)]"
@@ -77,7 +95,7 @@ export default function CategoryNav() {
       </div>
 
       {/* Mobile hamburger menu */}
-      <div className='md:hidden flex items-center justify-between px-4 py-2'>
+      <div className='md:hidden flex items-center justify-between px-4 py-2 sticky top-0 z-30 bg-[#0d0d0f]/90 backdrop-blur-md border-b border-[rgba(245,245,220,0.04)]'>
         <Link href='/'>
           <span className='text-sm font-black'>
             <span className='text-[#f5f5dc]'>FLSH</span>
@@ -85,17 +103,33 @@ export default function CategoryNav() {
           </span>
         </Link>
 
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className='p-2 rounded-xl glass'
-        >
-          {mobileMenuOpen ? (
-            <X size={18} className='text-[#f5f5dc]' />
-          ) : (
-            <Menu size={18} className='text-[#f5f5dc]' />
+        <div className='flex items-center gap-2'>
+          {/* Active category indicator on mobile */}
+          {currentCategory && (
+            <span
+              className='text-[10px] font-bold px-2 py-1 rounded-full'
+              style={{
+                background: `${currentCategory.color}15`,
+                color: currentCategory.color,
+                border: `1px solid ${currentCategory.color}30`,
+              }}
+            >
+              {currentCategory.emoji} {currentCategory.name}
+            </span>
           )}
-        </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className='p-2 rounded-xl glass'
+          >
+            {mobileMenuOpen ? (
+              <X size={18} className='text-[#f5f5dc]' />
+            ) : (
+              <Menu size={18} className='text-[#f5f5dc]' />
+            )}
+          </motion.button>
+        </div>
       </div>
 
       {/* Mobile menu overlay */}
