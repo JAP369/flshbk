@@ -4,7 +4,13 @@ import { useRef } from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { Shield, Star, TrendingUp } from "lucide-react";
 
-export type Rarity = "common" | "rare" | "secret" | "chase";
+export type Rarity =
+  | "common"
+  | "uncommon"
+  | "rare"
+  | "secret"
+  | "chase"
+  | "ultra";
 
 export interface CollectibleItem {
   id: string;
@@ -15,8 +21,8 @@ export interface CollectibleItem {
   price: string;
   priceChange?: number;
   verified?: boolean;
-  grade?: string; // PSA grade
-  condition?: string; // Box condition
+  grade?: string;
+  condition?: string;
   status?: "opened" | "unopened";
   category: "blindbox" | "lego" | "card";
 }
@@ -26,9 +32,15 @@ const rarityConfig: Record<
   { label: string; color: string; glow: string }
 > = {
   common: { label: "Common", color: "#94a3b8", glow: "rgba(148,163,184,0.2)" },
+  uncommon: {
+    label: "Uncommon",
+    color: "#4ade80",
+    glow: "rgba(74,222,128,0.25)",
+  },
   rare: { label: "Rare", color: "#60a5fa", glow: "rgba(96,165,250,0.3)" },
   secret: { label: "Secret", color: "#c084fc", glow: "rgba(192,132,252,0.35)" },
   chase: { label: "Chase ✦", color: "#ff2d2d", glow: "rgba(255,45,45,0.4)" },
+  ultra: { label: "Ultra ✦✦", color: "#fbbf24", glow: "rgba(251,191,36,0.45)" },
 };
 
 interface Props {
@@ -44,7 +56,10 @@ export default function CollectibleCard({
 }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const rarity = rarityConfig[item.rarity];
-  const isHolo = item.rarity === "secret" || item.rarity === "chase";
+  const isHolo =
+    item.rarity === "secret" ||
+    item.rarity === "chase" ||
+    item.rarity === "ultra";
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -100,12 +115,10 @@ export default function CollectibleCard({
           compact ? "w-32" : "w-full"
         }`}
       >
-        {/* Card image area */}
         <div
           className={`relative overflow-hidden ${compact ? "h-36" : "h-48"}`}
           style={{ background: "linear-gradient(135deg, #1a1a22, #0d0d0f)" }}
         >
-          {/* Placeholder visual */}
           <div className='absolute inset-0 flex items-center justify-center'>
             <span className='text-5xl select-none'>
               {item.category === "blindbox"
@@ -116,12 +129,10 @@ export default function CollectibleCard({
             </span>
           </div>
 
-          {/* Holographic shimmer overlay */}
           {isHolo && (
             <div className='holo-shimmer absolute inset-0 mix-blend-screen opacity-60 pointer-events-none' />
           )}
 
-          {/* Glare spot */}
           {isHolo && (
             <motion.div
               className='absolute w-24 h-24 rounded-full pointer-events-none'
@@ -136,7 +147,6 @@ export default function CollectibleCard({
             />
           )}
 
-          {/* Rarity badge */}
           <div
             className='absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider'
             style={{
@@ -148,7 +158,6 @@ export default function CollectibleCard({
             {rarity.label}
           </div>
 
-          {/* Verified badge */}
           {item.verified && (
             <div className='absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[rgba(0,200,100,0.15)] border border-[rgba(0,200,100,0.4)]'>
               <Shield size={10} className='text-emerald-400' />
@@ -158,7 +167,6 @@ export default function CollectibleCard({
             </div>
           )}
 
-          {/* Grade badge */}
           {item.grade && (
             <div className='absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[rgba(255,45,45,0.2)] border border-[#ff2d2d]/40'>
               <span className='text-[10px] text-[#ff2d2d] font-mono font-bold'>
@@ -168,7 +176,6 @@ export default function CollectibleCard({
           )}
         </div>
 
-        {/* Card info */}
         <div className='p-3 bg-[#141418]'>
           {!compact && (
             <p className='text-[10px] text-[#f0ede6]/40 uppercase tracking-widest font-mono mb-0.5'>
@@ -201,7 +208,6 @@ export default function CollectibleCard({
             </div>
           )}
 
-          {/* Metadata pills */}
           {!compact && (item.condition || item.status) && (
             <div className='flex gap-1.5 mt-2 flex-wrap'>
               {item.condition && (
