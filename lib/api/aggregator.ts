@@ -1,9 +1,5 @@
 import type { AggregatorListing, ItemCategory } from "@/lib/types/database";
-
-async function getSupabase() {
-  const mod = await import("@/lib/supabase/client");
-  return mod.createClient();
-}
+import { getMockAggregatorListings, getMockDeals, MOCK_AGGREGATOR_LISTINGS } from "@/lib/data/mockData";
 
 export interface AggregatorFilters {
   category?: ItemCategory;
@@ -17,64 +13,124 @@ export interface AggregatorFilters {
   offset?: number;
 }
 
+type AggregatorApiResponse<T> = {
+  data: T;
+  fallback: boolean;
+  fallbackReason?: string;
+};
+
+function buildQueryString(filters: AggregatorFilters) {
+  const params = new URLSearchParams();
+
+  if (filters.category) params.set("category", filters.category);
+  if (filters.source) params.set("source", filters.source);
+  if (filters.dealsOnly) params.set("dealsOnly", "true");
+  if (filters.minPrice !== undefined) params.set("minPrice", String(filters.minPrice));
+  if (filters.maxPrice !== undefined) params.set("maxPrice", String(filters.maxPrice));
+  if (filters.search) params.set("search", filters.search);
+  if (filters.sortBy) params.set("sortBy", filters.sortBy);
+  if (filters.limit !== undefined) params.set("limit", String(filters.limit));
+  if (filters.offset !== undefined) params.set("offset", String(filters.offset));
+
+  return params.toString();
+}
+
+async function fetchAggregator<T>(queryParams: string) {
+  const response = await fetch(`/api/aggregator?${queryParams}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Aggregator API request failed");
+  }
+
+  return (await response.json()) as AggregatorApiResponse<T>;
+}
+
 export async function getAggregatorListings(filters: AggregatorFilters = {}) {
-  const supabase = await getSupabase();
-  let query = supabase.from("aggregator_listings").select("*");
-
-  if (filters.category) query = query.eq("category", filters.category);
-  if (filters.source) query = query.eq("source", filters.source);
-  if (filters.dealsOnly) query = query.eq("is_deal", true);
-  if (filters.minPrice !== undefined) query = query.gte("price_hkd", filters.minPrice);
-  if (filters.maxPrice !== undefined) query = query.lte("price_hkd", filters.maxPrice);
-
-  if (filters.search) {
-    query = query.or(
-      `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
-    );
+  try {
+    const query = buildQueryString(filters);
+    return await fetchAggregator<AggregatorListing[]>(query);
+  } catch {
+    return {
+      data: filterMockAggregatorListings(getMockAggregatorListings(filters.category), filters),
+      fallback: true,
+      fallbackReason: "client_fetch_error",
+    };
   }
-
-  switch (filters.sortBy) {
-    case "price_asc":
-      query = query.order("price_hkd", { ascending: true });
-      break;
-    case "price_desc":
-      query = query.order("price_hkd", { ascending: false });
-      break;
-    case "deal_score":
-      query = query.order("deal_score", { ascending: false });
-      break;
-    default:
-      query = query.order("created_at", { ascending: false });
-  }
-
-  if (filters.limit) {
-    const offset = filters.offset || 0;
-    query = query.range(offset, offset + filters.limit - 1);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data as AggregatorListing[];
 }
 
 export async function getDeals(limit = 20) {
-  const supabase = await getSupabase();
-  const { data, error } = await supabase
-    .from("aggregator_listings")
-    .select("*")
-    .eq("is_deal", true)
-    .order("deal_score", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data as AggregatorListing[];
+  try {
+    const query = new URLSearchParams({
+      dealsOnly: "true",
+      limit: String(limit),
+    }).toString();
+    return await fetchAggregator<AggregatorListing[]>(query);
+  } catch {
+    return {
+      data: getMockDeals(limit),
+      fallback: true,
+      fallbackReason: "client_fetch_error",
+    };
+  }
 }
 
 export async function getSources() {
-  const supabase = await getSupabase();
-  const { data, error } = await supabase
-    .from("aggregator_listings")
-    .select("source")
-    .order("source");
-  if (error) throw error;
-  return [...new Set(data.map((d) => d.source))];
+  try {
+    const response = await fetch(`/api/aggregator?sources=1`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error("Sources API request failed");
+    return (await response.json()) as AggregatorApiResponse<string[]>;
+  } catch {
+    return {
+      data: [...new Set(MOCK_AGGREGATOR_LISTINGS.map((d) => d.source))],
+      fallback: true,
+      fallbackReason: "client_fetch_error",
+    };
+  }
+}
+
+function filterMockAggregatorListings(listings: AggregatorListing[], filters: AggregatorFilters) {
+  const filtered = listings.filter((listing) => {
+    if (filters.category && listing.category !== filters.category) return false;
+    if (filters.source && listing.source !== filters.source) return false;
+    if (filters.dealsOnly && !listing.is_deal) return false;
+    if (filters.minPrice !== undefined && listing.price_hkd < filters.minPrice) return false;
+    if (filters.maxPrice !== undefined && listing.price_hkd > filters.maxPrice) return false;
+    if (filters.search) {
+      const search = filters.search.toLowerCase();
+      const title = listing.title.toLowerCase();
+      const description = listing.description?.toLowerCase() ?? "";
+      if (!title.includes(search) && !description.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered];
+
+  switch (filters.sortBy) {
+    case "price_asc":
+      sorted.sort((a, b) => (a.price_hkd ?? 0) - (b.price_hkd ?? 0));
+      break;
+    case "price_desc":
+      sorted.sort((a, b) => (b.price_hkd ?? 0) - (a.price_hkd ?? 0));
+      break;
+    case "deal_score":
+      sorted.sort((a, b) => (b.deal_score ?? 0) - (a.deal_score ?? 0));
+      break;
+    default:
+      sorted.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+  }
+
+  if (filters.limit !== undefined) {
+    const offset = filters.offset || 0;
+    return sorted.slice(offset, offset + filters.limit);
+  }
+
+  return sorted;
 }

@@ -1,0 +1,243 @@
+import { NextResponse, type NextRequest } from "next/server";
+import type { AggregatorListing } from "@/lib/types/database";
+import {
+  getMockAggregatorListings,
+  MOCK_AGGREGATOR_LISTINGS,
+} from "@/lib/data/mockData";
+import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { searchFacebookMarketplace, mapToAggregatorListing } from "@/lib/aggregators/facebook";
+
+function parseBool(value: string | null) {
+  return value === "true";
+}
+
+function parseNumber(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeCategory(category?: string) {
+  if (!category) return category;
+  const categoryMap: Record<string, string> = {
+    tcg: "pokemon_card",
+    pokemon: "pokemon_card",
+    pokemon_card: "pokemon_card",
+    lego: "lego",
+    hot_toys: "hot_toys",
+    hottoys: "hot_toys",
+    pop_mart: "pop_mart",
+    popmart: "pop_mart",
+    hot_wheels: "hot_wheels",
+    hotwheels: "hot_wheels",
+  };
+  return categoryMap[category] || category;
+}
+
+function filterMockAggregatorListings(
+  listings: AggregatorListing[],
+  params: {
+    category?: string;
+    source?: string;
+    dealsOnly?: boolean;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    sortBy?: string;
+    limit?: number;
+    offset?: number;
+  },
+) {
+  const filtered = listings.filter((listing) => {
+    if (params.category && listing.category !== params.category) return false;
+    if (params.source && listing.source !== params.source) return false;
+    if (params.dealsOnly && !listing.is_deal) return false;
+    if (params.minPrice !== undefined && listing.price_hkd < params.minPrice) return false;
+    if (params.maxPrice !== undefined && listing.price_hkd > params.maxPrice) return false;
+    if (params.search) {
+      const search = params.search.toLowerCase();
+      const title = listing.title.toLowerCase();
+      const description = listing.description?.toLowerCase() ?? "";
+      if (!title.includes(search) && !description.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered];
+  switch (params.sortBy) {
+    case "price_asc":
+      sorted.sort((a, b) => (a.price_hkd ?? 0) - (b.price_hkd ?? 0));
+      break;
+    case "price_desc":
+      sorted.sort((a, b) => (b.price_hkd ?? 0) - (a.price_hkd ?? 0));
+      break;
+    case "deal_score":
+      sorted.sort((a, b) => (b.deal_score ?? 0) - (a.deal_score ?? 0));
+      break;
+    default:
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  if (params.limit !== undefined) {
+    const offset = params.offset || 0;
+    return sorted.slice(offset, offset + params.limit);
+  }
+  return sorted;
+}
+
+/**
+ * Map Facebook category to our internal category
+ */
+function mapFBCategoryToInternal(category?: string): string | undefined {
+  if (!category) return undefined;
+  const map: Record<string, string> = {
+    "pokemon_card": "pokemon_card",
+    "lego": "lego",
+    "hot_toys": "hot_toys",
+    "pop_mart": "pop_mart",
+    "hot_wheels": "hot_wheels",
+    "funko": "funko",
+    "other": "other",
+  };
+  return map[category] || category;
+}
+
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const params = url.searchParams;
+  const category = params.get("category") || undefined;
+  const source = params.get("source") || undefined;
+  const search = params.get("search") || undefined;
+  const dealsOnly = parseBool(params.get("dealsOnly"));
+  const minPrice = params.has("minPrice") ? parseNumber(params.get("minPrice"), 0) : undefined;
+  const maxPrice = params.has("maxPrice") ? parseNumber(params.get("maxPrice"), 0) : undefined;
+  const sortBy = params.get("sortBy") || undefined;
+  const limit = parseNumber(params.get("limit"), 50);
+  const offset = parseNumber(params.get("offset"), 0);
+  const listSources = params.get("sources") === "1";
+
+  const supabase = await createSupabaseServerClient();
+  const useMock = !supabase;
+
+  // ── Sources endpoint ──
+  if (listSources) {
+    if (useMock) {
+      return NextResponse.json({
+        data: [...new Set(MOCK_AGGREGATOR_LISTINGS.map((l) => l.source))],
+        fallback: true,
+        fallbackReason: "supabase_unavailable",
+      });
+    }
+    const sourcesResult = await supabase.from("aggregator_listings").select("source").order("source");
+    const sources = sourcesResult.data
+      ? [...new Set(sourcesResult.data.map((row: { source: string }) => row.source))]
+      : undefined;
+    if (sourcesResult.error || !sources) {
+      return NextResponse.json({
+        data: [...new Set(MOCK_AGGREGATOR_LISTINGS.map((l) => l.source))],
+        fallback: true,
+        fallbackReason: "database_error",
+      });
+    }
+    return NextResponse.json({ data: sources, fallback: false });
+  }
+
+  const normalizedCategory = normalizeCategory(category);
+
+  // ── Try Facebook Marketplace live scrape first ──
+  // Only scrape when no specific source is requested (or source is facebook)
+  const shouldScrape = !source || source === "facebook_marketplace" || source === "facebook";
+
+  if (shouldScrape) {
+    try {
+      const fbCategory = mapFBCategoryToInternal(normalizedCategory);
+      const fbListings = await searchFacebookMarketplace(
+        search || fbCategory || "collectibles",
+        fbCategory,
+      );
+
+      if (fbListings.length > 0) {
+        let mapped = fbListings.map(mapToAggregatorListing);
+
+        // Apply filters
+        mapped = filterMockAggregatorListings(mapped, {
+          category: normalizedCategory,
+          source,
+          dealsOnly,
+          minPrice,
+          maxPrice,
+          search,
+          sortBy,
+          limit,
+          offset,
+        });
+
+        return NextResponse.json({
+          data: mapped,
+          fallback: false,
+          source: "facebook_marketplace",
+          liveCount: mapped.length,
+        });
+      }
+    } catch (err) {
+      console.error("[Aggregator] FB scrape failed:", err);
+    }
+  }
+
+  // ── Try Supabase ──
+  if (!useMock) {
+    try {
+      let queryBuilder = supabase.from("aggregator_listings").select("*");
+
+      if (normalizedCategory) queryBuilder = queryBuilder.eq("category", normalizedCategory);
+      if (source) queryBuilder = queryBuilder.eq("source", source);
+      if (dealsOnly) queryBuilder = queryBuilder.eq("is_deal", true);
+      if (minPrice !== undefined) queryBuilder = queryBuilder.gte("price_hkd", minPrice);
+      if (maxPrice !== undefined) queryBuilder = queryBuilder.lte("price_hkd", maxPrice);
+      if (search) {
+        queryBuilder = queryBuilder.or(
+          `title.ilike.%${search}%,description.ilike.%${search}%`,
+        );
+      }
+
+      switch (sortBy) {
+        case "price_asc":
+          queryBuilder = queryBuilder.order("price_hkd", { ascending: true });
+          break;
+        case "price_desc":
+          queryBuilder = queryBuilder.order("price_hkd", { ascending: false });
+          break;
+        case "deal_score":
+          queryBuilder = queryBuilder.order("deal_score", { ascending: false });
+          break;
+        default:
+          queryBuilder = queryBuilder.order("created_at", { ascending: false });
+      }
+
+      queryBuilder = queryBuilder.range(offset, offset + limit - 1);
+
+      const { data, error } = await queryBuilder;
+      if (!error && data) {
+        return NextResponse.json({ data: data as AggregatorListing[], fallback: false });
+      }
+    } catch (err) {
+      console.error("[Aggregator] Supabase query failed:", err);
+    }
+  }
+
+  // ── Fallback to mock data ──
+  return NextResponse.json({
+    data: filterMockAggregatorListings(getMockAggregatorListings(normalizedCategory), {
+      category: normalizedCategory,
+      source,
+      dealsOnly,
+      minPrice,
+      maxPrice,
+      search,
+      sortBy,
+      limit,
+      offset,
+    }),
+    fallback: true,
+    fallbackReason: useMock ? "supabase_unavailable" : "query_error",
+  });
+}

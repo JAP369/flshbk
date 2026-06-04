@@ -25,7 +25,7 @@ export default function Footer() {
               Categories
             </p>
             <Link
-              href='/categories/pokemon'
+              href='/categories/tcg'
               className='text-[10px] text-[#f0ede6]/40 hover:text-[#ff2d2d]'
             >
               Trading Cards

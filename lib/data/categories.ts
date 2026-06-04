@@ -12,12 +12,12 @@ export interface CategoryConfig {
 
 export const CATEGORIES: CategoryConfig[] = [
   {
-    id: "pokemon",
+    id: "tcg",
     name: "Trading Cards",
     icon: "🃏",
     emoji: "🃏",
     description: "Pokemon, Magic, Yu-Gi-Oh and more",
-    href: "/categories/pokemon",
+    href: "/categories/tcg",
     color: "#fbbf24",
     subcategories: ["Pokemon", "Magic: The Gathering", "Yu-Gi-Oh", "Sports Cards"],
     marketplaces: ["Carousell HK", "Facebook Marketplace", "Reddit", "TCGplayer"],
@@ -68,10 +68,16 @@ export const CATEGORIES: CategoryConfig[] = [
   },
 ];
 
+const CATEGORY_ALIAS_MAP: Record<string, string> = {
+  pokemon: "tcg",
+};
+
 export function getCategory(id: string): CategoryConfig | undefined {
-  return CATEGORIES.find((c) => c.id === id);
+  const normalizedId = CATEGORY_ALIAS_MAP[id] ?? id;
+  return CATEGORIES.find((c) => c.id === normalizedId);
 }
 
 export function getCategoryByPath(path: string): CategoryConfig | undefined {
-  return CATEGORIES.find((c) => c.href === path);
+  const normalizedPath = path === "/categories/pokemon" ? "/categories/tcg" : path;
+  return CATEGORIES.find((c) => c.href === normalizedPath);
 }

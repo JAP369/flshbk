@@ -5,7 +5,6 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/contexts/AuthContext";
 import BottomNav from "@/components/BottomNav";
 import CategoryNav from "@/components/CategoryNav";
-import Footer from "@/components/Footer";
 import DevAuthButton from "@/components/DevAuthButton";
 
 const geistSans = Geist({
@@ -62,7 +61,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
       <DevAuthButton />
       <CategoryNav />
       <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
-      <Footer />
       <BottomNav />
     </>
   );
@@ -82,7 +80,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
         <body className='min-h-full flex flex-col bg-[#0d0d0f] text-[#f0ede6]'>
-          <AppContent>{children}</AppContent>
+          <AuthProvider>
+            <AppContent>{children}</AppContent>
+          </AuthProvider>
         </body>
       </html>
     );

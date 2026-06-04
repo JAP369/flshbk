@@ -29,14 +29,14 @@ export default function SettingsPage() {
           icon: User,
           label: "Profile",
           href: user ? `/profile/${user.username}` : "/login",
-          value: user?.display_name || "Not signed in",
+          value: user?.displayName || "Not signed in",
         },
         { icon: Shield, label: "Privacy & Security", href: "#" },
         {
           icon: Zap,
           label: "$NEXUS Tokens",
           href: "#",
-          value: user ? `${user.nexus_tokens} tokens` : "—",
+          value: user ? `${user.nexusTokens} tokens` : "—",
         },
       ],
     },
@@ -90,11 +90,11 @@ export default function SettingsPage() {
           <div className='glass rounded-2xl p-4 border border-[rgba(245,245,220,0.06)]'>
             <div className='flex items-center gap-3'>
               <div className='w-12 h-12 rounded-full bg-[rgba(255,45,45,0.1)] flex items-center justify-center text-xl'>
-                {user.display_name?.slice(0, 1) || "👤"}
+                {user.displayName?.slice(0, 1) || "👤"}
               </div>
               <div className='flex-1 min-w-0'>
                 <p className='text-sm font-bold text-[#f5f5dc] truncate'>
-                  {user.display_name}
+                  {user.displayName}
                 </p>
                 <p className='text-[10px] text-[#f0ede6]/40 font-mono'>
                   @{user.username} · Lvl {user.level}
@@ -102,7 +102,7 @@ export default function SettingsPage() {
               </div>
               <div className='text-right'>
                 <p className='text-sm font-black text-emerald-400'>
-                  {user.nexus_tokens}
+                  {user.nexusTokens}
                 </p>
                 <p className='text-[9px] text-[#f0ede6]/30 font-mono'>$NEXUS</p>
               </div>
