@@ -1,6 +1,66 @@
 import type { ProductItem } from "@/components/common/ProductCard";
 import type { AggregatorListing, ItemCategory } from "@/lib/types/database";
 
+function generateImageUrl(title: string, category: ItemCategory, index: number): string {
+  const lowerTitle = title.toLowerCase();
+
+  if (category === "pokemon_card") {
+    const cardMap: Record<string, string> = {
+      "charizard": "swsh4/188_hires.png",
+      "pikachu": "swsh4/190_hires.png",
+      "mew": "swsh7/275_hires.png",
+      "umbreon": "xy1/1_hires.png",
+      "rayquaza": "sm1/1_hires.png",
+      "greninja": "swsh4/189_hires.png",
+      "lugia": "xy12/1_hires.png",
+      "mewtwo": "sm1/1_hires.png",
+      "blastoise": "base1/4_hires.png",
+    };
+    for (const [key, path] of Object.entries(cardMap)) {
+      if (lowerTitle.includes(key)) {
+        return `https://images.pokemontcg.io/${path}`;
+      }
+    }
+    return "https://images.pokemontcg.io/swsh4/188_hires.png";
+  }
+
+  if (category === "lego") {
+    const legoMap: Record<string, string> = {
+      "falcon": "10307_prod.jpg",
+      "at-at": "75313_prod.jpg",
+      "eiffel": "75252_prod.jpg",
+      "tower": "10295_prod.jpg",
+      "bugatti": "75309_prod.jpg",
+      "civic": "42115_prod.jpg",
+      "porsche": "42056_prod.jpg",
+    };
+    for (const [key, path] of Object.entries(legoMap)) {
+      if (lowerTitle.includes(key)) {
+        return `https://www.lego.com/cdn/product-assets/product.img.pri/${path}`;
+      }
+    }
+    return "https://www.lego.com/cdn/product-assets/product.img.pri/10307_prod.jpg";
+  }
+
+  if (category === "pop_mart") {
+    const popmartMap: Record<string, string> = {
+      "labubu": "m/o/molly_zodiac_series_1.jpg",
+      "molly": "m/o/molly_zodiac_series_1.jpg",
+      "skullpanda": "s/k/skullpanda_1.jpg",
+      "dimoo": "d/i/dimoo_world_1.jpg",
+      "pucky": "p/a/pucky_1.jpg",
+    };
+    for (const [key, path] of Object.entries(popmartMap)) {
+      if (lowerTitle.includes(key)) {
+        return `https://www.popmart.com/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/${path}`;
+      }
+    }
+    return "https://www.popmart.com/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/m/o/molly_zodiac_series_1.jpg";
+  }
+
+  return CATEGORY_IMAGES[category]?.[index % 10] || CATEGORY_PLACEHOLDER_IMAGE_MAP[category];
+}
+
 // Real product images per category for mock data
 const CATEGORY_IMAGES: Record<ItemCategory, string[]> = {
   pokemon_card: [
@@ -254,6 +314,40 @@ const dealScoreForIndex = (index: number) => {
 
 const isDealForIndex = (index: number) => (index % 4 === 0);
 
+function calculateListingDealScore(listing: {
+  price_hkd: number;
+  original_price_hkd: number | null;
+  condition: string;
+  hasPhoto: boolean;
+}): number {
+  const { price_hkd, original_price_hkd, condition, hasPhoto } = listing;
+  let score = 0;
+
+  if (original_price_hkd && original_price_hkd > 0) {
+    const discountRatio = price_hkd / original_price_hkd;
+    if (discountRatio <= 0.5) score += 40;
+    else if (discountRatio <= 0.7) score += 35;
+    else if (discountRatio <= 0.85) score += 28;
+    else if (discountRatio <= 1.0) score += 20;
+    else score += 10;
+  } else {
+    score += 20;
+  }
+
+  const conditionScores: Record<string, number> = {
+    "mint": 1.0, "near mint": 0.9, "lightly played": 0.7,
+    "played": 0.5, "sealed": 1.0, "new": 1.0,
+    "psa 10": 1.0, "psa 9": 0.95, "psa 8": 0.85,
+  };
+  const condKey = condition.toLowerCase();
+  score += (conditionScores[condKey] ?? 0.5) * 20;
+
+  if (hasPhoto) score += 5;
+  score += 5;
+
+  return Math.round(Math.min(100, Math.max(0, score)));
+}
+
 const makeListing = (
   category: string,
   index: number,
@@ -264,7 +358,14 @@ const makeListing = (
   const originalPrice = priceBase + Math.round(Math.random() * 500 + 100);
   const condition = CONDITION_OPTIONS[index % CONDITION_OPTIONS.length];
   const sourceUrl = `${MARKET_SOURCE_URLS[source] ?? "https://www.example.com"}/item/${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const dbCategory = category as ItemCategory;
+  const imageUrl = generateImageUrl(title, dbCategory, index);
+  const hasPhoto = !!imageUrl;
   const isDeal = isDealForIndex(index);
+
+  const dealScore = isDeal
+    ? calculateListingDealScore({ price_hkd: priceBase, original_price_hkd: originalPrice, condition, hasPhoto })
+    : dealScoreForIndex(index);
 
   return {
     id: `${category}-${index + 1}`,
@@ -273,16 +374,16 @@ const makeListing = (
     source_id: `${source}-${index + 1}`,
     title,
     description: `${title} in ${condition} condition from a trusted Hong Kong seller.`,
-    category: category as ItemCategory,
+    category: dbCategory,
     price_hkd: priceBase,
     original_price_hkd: isDeal ? originalPrice : null,
     condition,
     seller_name: `${category}_seller_${index + 1}`,
     seller_rating: Number((4.3 + ((index % 6) * 0.1)).toFixed(2)),
-    image_url: CATEGORY_IMAGES[category as ItemCategory]?.[index % 10] || CATEGORY_PLACEHOLDER_IMAGE_MAP[category as ItemCategory],
+    image_url: imageUrl,
     location: CATEGORY_LOCATIONS[category][index % CATEGORY_LOCATIONS[category].length],
     is_deal: isDeal,
-    deal_score: dealScoreForIndex(index),
+    deal_score: dealScore,
     raw_data: {},
     last_seen: new Date(Date.now() - index * 60000).toISOString(),
     created_at: new Date(Date.now() - index * 3600000).toISOString(),

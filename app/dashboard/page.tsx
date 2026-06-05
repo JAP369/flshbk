@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowRight,
   Zap,
-  TrendingUp,
   Bell,
   ChevronRight,
   Activity,
@@ -20,8 +18,6 @@ import {
   BarChart3,
   Eye,
   Plus,
-  Search,
-  Filter,
   ArrowUpRight,
   ArrowDownRight,
   Star,
@@ -34,7 +30,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import CollectibleCard, { CollectibleItem } from "@/components/CollectibleCard";
 import DashboardFilters, {
   type FilterStateWithSort,
-  type FilterState,
   type SortOption,
 } from "@/components/DashboardFilters";
 import { getAggregatorListings, getSources } from "@/lib/api/aggregator";
@@ -107,11 +102,21 @@ export default function DashboardPage() {
 }
 
 function SellerDashboard({ user, onSignOut }: { user: import("@/contexts/AuthContext").AuthUser; onSignOut: () => void }) {
+  const searchParams = useSearchParams();
   const [topDeals, setTopDeals] = useState<CollectibleItem[]>([]);
   const [isDealsLoading, setIsDealsLoading] = useState(true);
   const [filters, setFilters] = useState<FilterStateWithSort>({});
   const [sources, setSources] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "deals" | "analytics">("overview");
+
+  const getTabFromSearch = (): "overview" | "inventory" | "deals" | "analytics" => {
+    const tab = searchParams.get("tab");
+    if (tab === "overview" || tab === "inventory" || tab === "deals" || tab === "analytics") {
+      return tab;
+    }
+    return "overview";
+  };
+
+  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "deals" | "analytics">(() => getTabFromSearch());
 
   useEffect(() => {
     let sourcesActive = true;
@@ -253,15 +258,12 @@ function SellerDashboard({ user, onSignOut }: { user: import("@/contexts/AuthCon
       {/* Tab content */}
       {activeTab === "overview" && (
         <OverviewTab
-          user={user}
           isLive={isLive}
           sources={sources}
           topDeals={topDeals}
           dealItems={dealItems}
           isDealsLoading={isDealsLoading}
           hasFilters={hasFilters}
-          filters={filters}
-          onFilterChange={handleFilterChange}
         />
       )}
       {activeTab === "inventory" && <InventoryTab />}
@@ -270,7 +272,6 @@ function SellerDashboard({ user, onSignOut }: { user: import("@/contexts/AuthCon
           dealItems={dealItems}
           isDealsLoading={isDealsLoading}
           hasFilters={hasFilters}
-          filters={filters}
           onFilterChange={handleFilterChange}
         />
       )}
@@ -281,25 +282,19 @@ function SellerDashboard({ user, onSignOut }: { user: import("@/contexts/AuthCon
 
 /* ─── Overview Tab ─── */
 function OverviewTab({
-  user,
   isLive,
   sources,
   topDeals,
   dealItems,
   isDealsLoading,
   hasFilters,
-  filters,
-  onFilterChange,
 }: {
-  user: import("@/contexts/AuthContext").AuthUser;
   isLive: boolean;
   sources: string[];
   topDeals: CollectibleItem[];
   dealItems: CollectibleItem[];
   isDealsLoading: boolean;
   hasFilters: boolean;
-  filters: FilterStateWithSort;
-  onFilterChange: (f: FilterStateWithSort) => void;
 }) {
   const stats = [
     { label: "Total Value", value: "HKD 24,000", change: "+12.4%", up: true, icon: DollarSign, color: "#00c864" },
@@ -397,7 +392,7 @@ function OverviewTab({
                 <div className='h-36 bg-[rgba(245,245,220,0.03)] animate-pulse' />
                 <div className='p-3 space-y-2'>
                   <div className='h-3 rounded bg-[rgba(245,245,220,0.04)] animate-pulse w-3/4' />
-                  <div className='h-3 rounded bg-[rgba(245,245,220,0.04)] animate-pulse w-1/2' />
+                  <div className='h-3 rounded bg-[rgba(245,245,220,0.03)] animate-pulse w-1/2' />
                 </div>
               </div>
             ))}
@@ -586,13 +581,11 @@ function DealsTab({
   dealItems,
   isDealsLoading,
   hasFilters,
-  filters,
   onFilterChange,
 }: {
   dealItems: CollectibleItem[];
   isDealsLoading: boolean;
   hasFilters: boolean;
-  filters: FilterState;
   onFilterChange: (f: FilterStateWithSort) => void;
 }) {
   return (
@@ -625,20 +618,20 @@ function DealsTab({
           <p className='text-sm text-[#f0ede6]/30 mb-1'>No results</p>
           <p className='text-[11px] text-[#f0ede6]/20'>Try adjusting your filters</p>
         </div>
-      ) : (
-        <div className='grid grid-cols-2 gap-3'>
-          {dealItems.map((item, i) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 * i }}
-            >
-              <CollectibleCard item={item} />
-            </motion.div>
-          ))}
-        </div>
-      )}
+) : (
+          <div className='grid grid-cols-2 gap-3'>
+            {dealItems.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.04 * i }}
+              >
+                <CollectibleCard item={item} />
+              </motion.div>
+            ))}
+          </div>
+        )}
     </div>
   );
 }

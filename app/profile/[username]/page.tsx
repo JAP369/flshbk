@@ -456,7 +456,6 @@ export default function ProfilePage() {
                                 : "blindbox",
                           condition: listing.condition,
                         }}
-                        compact
                       />
                     </Link>
                   ))}

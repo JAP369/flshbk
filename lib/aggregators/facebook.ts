@@ -12,6 +12,8 @@
 
 import * as cheerio from "cheerio";
 
+import { calculateDealScore } from "@/lib/aggregator/scorer";
+
 export interface FacebookMarketplaceListing {
   id: string;
   title: string;
@@ -180,6 +182,7 @@ function parseListings(html: string, category: string): FacebookMarketplaceListi
   }
 
   // Parse using the found selector
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   foundElements.each((index: number, el: any) => {
     const $el = $(el);
 
@@ -324,6 +327,16 @@ export async function searchMultipleQueries(
 export function mapToAggregatorListing(
   fb: FacebookMarketplaceListing,
 ): import("@/lib/types/database").AggregatorListing {
+  const dealScore = calculateDealScore({
+    priceHKD: fb.price || 0,
+    marketAverageHKD: fb.price || 0,
+    sellerRating: null,
+    condition: fb.condition || "new",
+    daysSinceListed: 0,
+    hasPhoto: !!fb.imageUrl,
+    hasDescription: !!fb.description,
+  });
+
   const now = new Date();
   return {
     id: fb.id,
@@ -340,8 +353,8 @@ export function mapToAggregatorListing(
     seller_rating: null,
     image_url: fb.imageUrl,
     location: fb.location || "Hong Kong",
-    is_deal: false,
-    deal_score: 0,
+    is_deal: dealScore >= 70,
+    deal_score: dealScore,
     raw_data: JSON.stringify({
       source: "facebook_marketplace",
       scrapedAt: fb.scrapedAt,

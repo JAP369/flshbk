@@ -7,6 +7,31 @@ import {
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchFacebookMarketplace, mapToAggregatorListing } from "@/lib/aggregators/facebook";
 
+type CacheEntry = {
+  data: AggregatorListing[];
+  timestamp: number;
+};
+
+const CACHE_DURATION = 5 * 60 * 1000;
+const cacheStore = new Map<string, CacheEntry>();
+
+function getCacheKey(params: URLSearchParams): string {
+  return params.toString();
+}
+
+function getCachedData(key: string): AggregatorListing[] | null {
+  const entry = cacheStore.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_DURATION) {
+    return entry.data;
+  }
+  cacheStore.delete(key);
+  return null;
+}
+
+function setCachedData(key: string, data: AggregatorListing[]) {
+  cacheStore.set(key, { data, timestamp: Date.now() });
+}
+
 function parseBool(value: string | null) {
   return value === "true";
 }
@@ -91,10 +116,15 @@ function mapFBCategoryToInternal(category?: string): string | undefined {
   if (!category) return undefined;
   const map: Record<string, string> = {
     "pokemon_card": "pokemon_card",
+    "pokemon": "pokemon_card",
+    "tcg": "pokemon_card",
     "lego": "lego",
     "hot_toys": "hot_toys",
+    "hottoys": "hot_toys",
     "pop_mart": "pop_mart",
+    "popmart": "pop_mart",
     "hot_wheels": "hot_wheels",
+    "hotwheels": "hot_wheels",
     "funko": "funko",
     "other": "other",
   };
@@ -104,6 +134,8 @@ function mapFBCategoryToInternal(category?: string): string | undefined {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const params = url.searchParams;
+  const cacheKey = getCacheKey(params);
+
   const category = params.get("category") || undefined;
   const source = params.get("source") || undefined;
   const search = params.get("search") || undefined;
@@ -114,6 +146,11 @@ export async function GET(request: NextRequest) {
   const limit = parseNumber(params.get("limit"), 50);
   const offset = parseNumber(params.get("offset"), 0);
   const listSources = params.get("sources") === "1";
+
+  const cachedData = getCachedData(cacheKey);
+  if (cachedData) {
+    return NextResponse.json({ data: cachedData, fallback: true, source: "cache" });
+  }
 
   const supabase = await createSupabaseServerClient();
   const useMock = !supabase;
@@ -171,6 +208,7 @@ export async function GET(request: NextRequest) {
           offset,
         });
 
+        setCachedData(cacheKey, mapped);
         return NextResponse.json({
           data: mapped,
           fallback: false,
@@ -217,6 +255,7 @@ export async function GET(request: NextRequest) {
 
       const { data, error } = await queryBuilder;
       if (!error && data) {
+        setCachedData(cacheKey, data as AggregatorListing[]);
         return NextResponse.json({ data: data as AggregatorListing[], fallback: false });
       }
     } catch (err) {
@@ -225,18 +264,20 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Fallback to mock data ──
+  const mockResult = filterMockAggregatorListings(getMockAggregatorListings(normalizedCategory), {
+    category: normalizedCategory,
+    source,
+    dealsOnly,
+    minPrice,
+    maxPrice,
+    search,
+    sortBy,
+    limit,
+    offset,
+  });
+  setCachedData(cacheKey, mockResult);
   return NextResponse.json({
-    data: filterMockAggregatorListings(getMockAggregatorListings(normalizedCategory), {
-      category: normalizedCategory,
-      source,
-      dealsOnly,
-      minPrice,
-      maxPrice,
-      search,
-      sortBy,
-      limit,
-      offset,
-    }),
+    data: mockResult,
     fallback: true,
     fallbackReason: useMock ? "supabase_unavailable" : "query_error",
   });

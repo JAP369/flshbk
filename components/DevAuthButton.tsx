@@ -3,22 +3,52 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, DEV_USERS } from "@/contexts/AuthContext";
-import { X, ChevronDown, LogOut, Zap, LayoutDashboard } from "lucide-react";
+import { X, ChevronDown, LogOut, Zap, LayoutDashboard, BarChart3, Package, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
-export default function DevAuthButton() {
-  if (process.env.NODE_ENV !== "development") return null;
+const DASHBOARD_SECTIONS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/dashboard?tab=overview" },
+  { id: "inventory", label: "Inventory", icon: Package, href: "/dashboard?tab=inventory" },
+  { id: "deals", label: "Deals", icon: TrendingUp, href: "/dashboard?tab=deals" },
+  { id: "analytics", label: "Analytics", icon: BarChart3, href: "/dashboard?tab=analytics" },
+];
 
+export default function DevAuthButton() {
   return <DevAuthPanel />;
 }
 
 function DevAuthPanel() {
   const { user, login, logout, isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
 
   return (
     <>
-      {/* Auth button — yellow when logged out, green when logged in, always right-3 */}
+      {/* Dashboard button — left side, green */}
+      {isAuthenticated && (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setDashboardOpen((v) => !v)}
+          className='fixed top-3 left-3 z-[9999] flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider select-none'
+          style={{
+            background: "rgba(0,200,100,0.15)",
+            border: "1px solid rgba(0,200,100,0.5)",
+            color: "#00c864",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <LayoutDashboard size={12} />
+          <span>Dashboard</span>
+          <ChevronDown
+            size={10}
+            className='transition-transform duration-200'
+            style={{ transform: dashboardOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+          />
+</motion.button>
+      )}
+
+      {/* Auth button — right side */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -51,28 +81,53 @@ function DevAuthPanel() {
         />
       </motion.button>
 
-      {/* Dashboard button — only visible when logged in, green, to the left of auth */}
-      {isAuthenticated && (
-        <Link href='/dashboard'>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className='fixed top-3 z-[9999] flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider select-none'
-            style={{
-              right: "7rem",
-              background: "rgba(0,200,100,0.15)",
-              border: "1px solid rgba(0,200,100,0.5)",
-              color: "#00c864",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <LayoutDashboard size={12} />
-            <span>Dashboard</span>
-          </motion.button>
-        </Link>
-      )}
+      {/* Dashboard dropdown */}
+      <AnimatePresence>
+        {dashboardOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 z-[9998]'
+              onClick={() => setDashboardOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: -8 }}
+              transition={{ type: "spring", stiffness: 320, damping: 25 }}
+              className='fixed top-11 left-3 z-[9999] w-56 rounded-2xl overflow-hidden'
+              style={{
+                background: "rgba(14,14,18,0.96)",
+                border: "1px solid rgba(0,200,100,0.3)",
+                backdropFilter: "blur(20px)",
+              }}
+            >
+              <div className='px-3 py-2.5' style={{ borderBottom: "1px solid rgba(0,200,100,0.15)" }}>
+                <span className='text-[9px] font-mono font-bold uppercase tracking-widest text-[#00c864]'>
+                  Dashboard Sections
+                </span>
+              </div>
+              <div className='p-1.5'>
+                {DASHBOARD_SECTIONS.map((section) => (
+                  <Link
+                    key={section.id}
+                    href={section.href}
+                    onClick={() => setDashboardOpen(false)}
+                    className='flex items-center gap-2 px-2.5 py-2 rounded-xl text-left hover:bg-white/5 transition-all'
+                  >
+                    <section.icon size={14} className='text-[#00c864]' />
+                    <span className='text-xs font-medium text-white/80'>{section.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
-      {/* Dropdown panel */}
+      {/* Auth dropdown */}
       <AnimatePresence>
         {open && (
           <>
@@ -173,7 +228,7 @@ function DevAuthPanel() {
                           {u.displayName}
                         </p>
                         <p className='text-[9px] text-white/35 font-mono'>
-                          Lvl {u.level} · {u.verifiedTrades} trades{" "}
+                          Lvl {u.level} · {u.verifiedTrades}{" "}
                           {u.isVerified ? "· ✓ Verified" : ""}
                         </p>
                       </div>

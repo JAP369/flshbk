@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Settings, Home, ChevronDown, LogOut, Zap, User, ShieldCheck } from "lucide-react";
+import { Menu, X, Settings, ChevronDown, LogOut, Zap, User, ShieldCheck } from "lucide-react";
 import { CATEGORIES } from "@/lib/data/categories";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEV_USERS } from "@/contexts/AuthContext";
@@ -38,49 +38,56 @@ export default function CategoryNav() {
   return (
     <>
       {/* Desktop / Tablet horizontal tabs */}
-      <div className='hidden md:flex items-center gap-1 px-4 py-2 overflow-x-auto no-scrollbar sticky top-0 z-30 bg-[#0d0d0f]/90 backdrop-blur-md border-b border-[rgba(245,245,220,0.04)]'>
-        {isAuthenticated && CATEGORIES.map((cat) => (
-          <Link key={cat.id} href={cat.href}>
+      <div className='hidden md:flex items-center justify-between px-4 py-2 overflow-x-auto no-scrollbar sticky top-0 z-30 bg-[#0d0d0f]/90 backdrop-blur-md border-b border-[rgba(245,245,220,0.04)]'>
+        {/* Left — empty for dashboard button space */}
+        <div className='w-24' />
+
+        {/* Center — categories */}
+        <div className='flex items-center gap-1'>
+          {isAuthenticated && CATEGORIES.map((cat) => (
+            <Link key={cat.id} href={cat.href}>
+              <motion.div
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab(cat.href)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                  isActive(cat.href)
+                    ? "border"
+                    : "text-[#f0ede6]/50 hover:text-[#f0ede6]/80 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
+                }`}
+                style={
+                  isActive(cat.href)
+                    ? {
+                        background: `${cat.color}15`,
+                        color: cat.color,
+                        borderColor: `${cat.color}40`,
+                      }
+                    : {}
+                }
+              >
+                <span>{cat.emoji}</span>
+                <span>{cat.name}</span>
+              </motion.div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Right — settings */}
+        <div className='flex items-center gap-1'>
+          <Link href='/settings'>
             <motion.div
               whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveTab(cat.href)}
+              onClick={() => setActiveTab("/settings")}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                isActive(cat.href)
-                  ? "border"
-                  : "text-[#f0ede6]/50 hover:text-[#f0ede6]/80 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
+                isActive("/settings")
+                  ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6] border border-[rgba(245,245,220,0.2)]"
+                  : "text-[#f0ede6]/40 hover:text-[#f0ede6]/70 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
               }`}
-              style={
-                isActive(cat.href)
-                  ? {
-                      background: `${cat.color}15`,
-                      color: cat.color,
-                      borderColor: `${cat.color}40`,
-                    }
-                  : {}
-              }
             >
-              <span>{cat.emoji}</span>
-              <span>{cat.name}</span>
+              <Settings size={14} />
+              <span>Settings</span>
             </motion.div>
           </Link>
-        ))}
-
-        <div className='flex-1' />
-
-        <Link href='/settings'>
-          <motion.div
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab("/settings")}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              isActive("/settings")
-                ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6] border border-[rgba(245,245,220,0.2)]"
-                : "text-[#f0ede6]/40 hover:text-[#f0ede6]/70 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
-            }`}
-          >
-            <Settings size={14} />
-            <span>Settings</span>
-          </motion.div>
-        </Link>
+        </div>
       </div>
 
       {/* Mobile header */}

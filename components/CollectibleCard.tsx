@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import Image from "next/image";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { Shield, Star, ExternalLink, Store } from "lucide-react";
 
@@ -52,9 +51,9 @@ const rarityConfig: Record<
 
 const PLACEHOLDER_IMAGES: Record<"blindbox" | "lego" | "card", string> = {
   blindbox:
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%231a1a22' width='400' height='400'/%3E%3Ctext x='50%' y='50%' font-size='80' fill='%23ff2d2d' text-anchor='middle' dy='.3em' font-family='system-ui'%3E🎭%3C/text%3E%3C/svg%3E",
-  lego: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%231a1a22' width='400' height='400'/%3E%3Ctext x='50%' y='50%' font-size='80' fill='%2360a5fa' text-anchor='middle' dy='.3em' font-family='system-ui'%3E🧱%3C/text%3E%3C/svg%3E",
-  card: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%231a1a22' width='400' height='400'/%3E%3Ctext x='50%' y='50%' font-size='80' fill='%23fbbf24' text-anchor='middle' dy='.3em' font-family='system-ui'%3E🃏%3C/text%3E%3C/svg%3E",
+    "https://www.popmart.com/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/m/o/molly_zodiac_series_1.jpg",
+  lego: "https://www.lego.com/cdn/product-assets/product.img.pri/10307_prod.jpg",
+  card: "https://images.pokemontcg.io/swsh4/188_hires.png",
 };
 
 function SellerBadge({ sellerName, sellerRating }: { sellerName?: string; sellerRating?: number | null }) {
@@ -161,6 +160,8 @@ export default function CollectibleCard({
     mouseY.set((e.touches[0].clientY - rect.top) / rect.height - 0.5);
   }
 
+  const imageUrl = item.image || PLACEHOLDER_IMAGES[item.category];
+
   return (
     <div className='card-3d-wrapper'>
       <motion.div
@@ -181,18 +182,15 @@ export default function CollectibleCard({
         className={`relative cursor-pointer rounded-2xl overflow-hidden transition-shadow duration-300 ${
           compact ? "w-32" : "w-full"
         }`}
-			>
-				<div
-        className={`relative overflow-hidden ${compact ? "h-36" : "h-48"}`}
-        style={{ background: "linear-gradient(135deg, #1a1a22, #0d0d0f)" }}
       >
-        <Image
-          src={item.image || PLACEHOLDER_IMAGES[item.category]}
+				<div
+          className={`relative overflow-hidden ${compact ? "h-36" : "h-40"}`}
+          style={{ background: "linear-gradient(135deg, #1a1a22, #0d0d0f)" }}
+      >
+        <img
+          src={imageUrl}
           alt={item.name}
-          fill
           className='object-cover w-full h-full'
-          sizes={compact ? "128px" : "100%"}
-          priority={false}
           onError={(event) => {
             const img = event.currentTarget ?? event.target;
             if (img instanceof HTMLImageElement) {
@@ -250,6 +248,7 @@ export default function CollectibleCard({
           </div>
         )}
 
+        <SellerBadge sellerName={item.sellerName} sellerRating={item.sellerRating} />
         <SourceLinkBadge source={item.source} sourceUrl={item.sourceUrl} />
 
         {item.grade && (
