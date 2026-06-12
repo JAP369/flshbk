@@ -6,6 +6,11 @@ import {
 } from "@/lib/data/mockData";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchFacebookMarketplace, mapToAggregatorListing } from "@/lib/aggregators/facebook";
+import { fetchTcgPrices, fetchSets, fetchCardPriceBreakdown } from "@/lib/aggregators/tcg";
+import { fetchLegoPrices } from "@/lib/aggregators/lego";
+import { fetchHotToysPrices } from "@/lib/aggregators/hottoys";
+import { fetchPopMartPrices } from "@/lib/aggregators/popmart";
+import { fetchHotWheelsPrices } from "@/lib/aggregators/hotwheels";
 
 type CacheEntry = {
   data: AggregatorListing[];
@@ -146,6 +151,8 @@ export async function GET(request: NextRequest) {
   const limit = parseNumber(params.get("limit"), 50);
   const offset = parseNumber(params.get("offset"), 0);
   const listSources = params.get("sources") === "1";
+  const listSets = params.get("sets") === "1";
+  const cardBreakdown = params.get("card") || null;
 
   const cachedData = getCachedData(cacheKey);
   if (cachedData) {
@@ -154,6 +161,28 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createSupabaseServerClient();
   const useMock = !supabase;
+
+  // ── Card Price Breakdown endpoint ──
+  if (cardBreakdown) {
+    try {
+      const breakdown = await fetchCardPriceBreakdown(cardBreakdown);
+      return NextResponse.json({ data: breakdown, fallback: !breakdown });
+    } catch (err) {
+      console.error("[Aggregator] Card breakdown failed:", err);
+      return NextResponse.json({ data: null, fallback: true, fallbackReason: "api_error" });
+    }
+  }
+
+  // ── Sets endpoint (for TCG set browser) ──
+  if (listSets) {
+    try {
+      const sets = await fetchSets();
+      return NextResponse.json({ data: sets, fallback: false, source: "pokemon_tcg_api" });
+    } catch (err) {
+      console.error("[Aggregator] Sets fetch failed:", err);
+      return NextResponse.json({ data: [], fallback: true, fallbackReason: "api_error" });
+    }
+  }
 
   // ── Sources endpoint ──
   if (listSources) {
@@ -179,6 +208,117 @@ export async function GET(request: NextRequest) {
   }
 
   const normalizedCategory = normalizeCategory(category);
+
+  // ── Try TCG Price Aggregation for pokemon_card category ──
+  if (normalizedCategory === "pokemon_card" && (!source || source === "tcgplayer" || source === "cardmarket")) {
+    try {
+      const tcgResult = await fetchTcgPrices(search, limit, offset);
+
+      if (tcgResult.listings.length > 0) {
+        let mapped = tcgResult.listings;
+
+        // Apply additional filters
+        mapped = filterMockAggregatorListings(mapped, {
+          category: normalizedCategory,
+          source,
+          dealsOnly,
+          minPrice,
+          maxPrice,
+          search,
+          sortBy,
+          limit,
+          offset: 0,
+        });
+
+        setCachedData(cacheKey, mapped);
+        return NextResponse.json({
+          data: mapped,
+          fallback: false,
+          source: "pokemon_tcg_api",
+          liveCount: mapped.length,
+          totalCount: tcgResult.totalCount,
+        });
+      }
+    } catch (err) {
+      console.error("[Aggregator] TCG price fetch failed:", err);
+    }
+  }
+
+  // ── Try LEGO Price Aggregation ──
+  if (normalizedCategory === "lego" && (!source || source === "bricklink" || source === "brickowl")) {
+    try {
+      const legoResult = await fetchLegoPrices(search, limit, offset);
+      if (legoResult.listings.length > 0) {
+        const mapped = filterMockAggregatorListings(legoResult.listings, {
+          category: normalizedCategory, source, dealsOnly, minPrice, maxPrice, search, sortBy, limit, offset: 0,
+        });
+        setCachedData(cacheKey, mapped);
+        return NextResponse.json({
+          data: mapped, fallback: false, source: "bricklink",
+          liveCount: mapped.length, totalCount: legoResult.totalCount,
+        });
+      }
+    } catch (err) {
+      console.error("[Aggregator] LEGO price fetch failed:", err);
+    }
+  }
+
+  // ── Try Hot Toys Price Aggregation ──
+  if (normalizedCategory === "hot_toys" && (!source || source === "sideshow" || source === "bigbadtoystore")) {
+    try {
+      const htResult = await fetchHotToysPrices(search, limit, offset);
+      if (htResult.listings.length > 0) {
+        const mapped = filterMockAggregatorListings(htResult.listings, {
+          category: normalizedCategory, source, dealsOnly, minPrice, maxPrice, search, sortBy, limit, offset: 0,
+        });
+        setCachedData(cacheKey, mapped);
+        return NextResponse.json({
+          data: mapped, fallback: false, source: "sideshow",
+          liveCount: mapped.length, totalCount: htResult.totalCount,
+        });
+      }
+    } catch (err) {
+      console.error("[Aggregator] Hot Toys price fetch failed:", err);
+    }
+  }
+
+  // ── Try Pop Mart Price Aggregation ──
+  if (normalizedCategory === "pop_mart" && (!source || source === "popmart" || source === "carousell")) {
+    try {
+      const pmResult = await fetchPopMartPrices(search, limit, offset);
+      if (pmResult.listings.length > 0) {
+        const mapped = filterMockAggregatorListings(pmResult.listings, {
+          category: normalizedCategory, source, dealsOnly, minPrice, maxPrice, search, sortBy, limit, offset: 0,
+        });
+        setCachedData(cacheKey, mapped);
+        return NextResponse.json({
+          data: mapped, fallback: false, source: "popmart",
+          liveCount: mapped.length, totalCount: pmResult.totalCount,
+        });
+      }
+    } catch (err) {
+      console.error("[Aggregator] Pop Mart price fetch failed:", err);
+    }
+  }
+
+  // ── Try Hot Wheels Price Aggregation ──
+  if (normalizedCategory === "hot_wheels" && (!source || source === "mattel" || source === "ebay")) {
+    try {
+      const hwResult = await fetchHotWheelsPrices(search, limit, offset);
+      if (hwResult.listings.length > 0) {
+        const mapped = filterMockAggregatorListings(hwResult.listings, {
+          category: normalizedCategory, source, dealsOnly, minPrice, maxPrice, search, sortBy, limit, offset: 0,
+        });
+        setCachedData(cacheKey, mapped);
+        return NextResponse.json({
+          data: mapped, fallback: false, source: "mattel",
+          liveCount: mapped.length, totalCount: hwResult.totalCount,
+        });
+      }
+    } catch (err) {
+      console.error("[Aggregator] Hot Wheels price fetch failed:", err);
+    }
+  }
 
   // ── Try Facebook Marketplace live scrape first ──
   // Only scrape when no specific source is requested (or source is facebook)

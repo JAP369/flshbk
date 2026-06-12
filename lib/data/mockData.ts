@@ -202,6 +202,33 @@ export const MOCK_PRODUCTS: Record<string, ProductItem[]> = {
   ],
 };
 
+// Pokemon TCG Set Data for enhanced mock listings
+const POKEMON_TCG_SETS = [
+  { code: "sv04pt", name: "Scarlet & Violet: Paradox Rift" },
+  { code: "sv04", name: "Scarlet & Violet: Crown Zenith" },
+  { code: "sv03pt", name: "Scarlet & Violet: 151" },
+  { code: "sv03", name: "Scarlet & Violet: Obsidian Flames" },
+  { code: "sv02pt", name: "Scarlet & Violet: 4.5" },
+  { code: "sv02", name: "Scarlet & Violet: Paldea Evolved" },
+  { code: "sv01pt", name: "Scarlet & Violet: Sprigatito" },
+  { code: "sv01", name: "Scarlet & Violet" },
+  { code: "swsh12pt", name: "Sword & Shield: Brilliant Stars" },
+  { code: "swsh12", name: "Sword & Shield: Astral Radiance" },
+];
+
+const POKEMON_CARDS = [
+  { name: "Charizard VMAX", rarity: "Secret Rare", types: ["Fire"] },
+  { name: "Pikachu V-UNION", rarity: "Ultra Rare", types: ["Electric"] },
+  { name: "Umbreon VMAX", rarity: "Secret Rare", types: ["Darkness"] },
+  { name: "Rayquaza VMAX", rarity: "Ultra Rare", types: ["Colorless"] },
+  { name: "Greninja V-UNION", rarity: "Ultra Rare", types: ["Water"] },
+  { name: "Reshiram & Charizard GX", rarity: "Secret Rare", types: ["Fire", "Dragon"] },
+  { name: "Lugia EX", rarity: "Holo Rare", types: ["Colorless"] },
+  { name: "Mewtwo GX", rarity: "Holo Rare", types: ["Psychic"] },
+  { name: "Blastoise VMAX", rarity: "Secret Rare", types: ["Water"] },
+  { name: "Venusaur VMAX", rarity: "Holo Rare", types: ["Grass"] },
+];
+
 const AGGREGATOR_PRODUCT_TEMPLATES: Record<string, string[]> = {
   pokemon_card: [
     "Charizard VMAX Rainbow Rare Shining Fates",
@@ -367,6 +394,23 @@ const makeListing = (
     ? calculateListingDealScore({ price_hkd: priceBase, original_price_hkd: originalPrice, condition, hasPhoto })
     : dealScoreForIndex(index);
 
+  // Add Pokemon-specific metadata
+  let pokemonMetadata = {};
+  if (category === "pokemon_card") {
+    const pokemonCard = POKEMON_CARDS[index % POKEMON_CARDS.length];
+    const set = POKEMON_TCG_SETS[index % POKEMON_TCG_SETS.length];
+    pokemonMetadata = {
+      card_name: pokemonCard.name,
+      set_name: set.name,
+      set_code: set.code,
+      rarity: pokemonCard.rarity,
+      card_type: pokemonCard.types[0],
+      card_number: `${(index % 300) + 1}`,
+      total_in_set: Math.floor(200 + Math.random() * 150),
+      grade: index % 3 === 0 ? `PSA ${10 - (index % 5)}` : "Ungraded",
+    };
+  }
+
   return {
     id: `${category}-${index + 1}`,
     source,
@@ -384,7 +428,7 @@ const makeListing = (
     location: CATEGORY_LOCATIONS[category][index % CATEGORY_LOCATIONS[category].length],
     is_deal: isDeal,
     deal_score: dealScore,
-    raw_data: {},
+    raw_data: pokemonMetadata,
     last_seen: new Date(Date.now() - index * 60000).toISOString(),
     created_at: new Date(Date.now() - index * 3600000).toISOString(),
   };
@@ -395,7 +439,7 @@ export const MOCK_AGGREGATOR_LISTINGS: AggregatorListing[] = [
     const names = AGGREGATOR_PRODUCT_TEMPLATES[category];
     const sources = CATEGORY_SOURCES[category];
     return Array.from({ length: 30 }, (_, idx) => {
-      const title = names[idx % names.length] + ` ${idx + 1}`;
+      const title = names[idx % names.length];
       const source = sources[idx % sources.length];
       return makeListing(category, idx, title, source);
     });

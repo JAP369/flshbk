@@ -13,6 +13,45 @@ export type ListingStatus = "active" | "sold" | "expired" | "cancelled";
 export type TradeStatus = "pending" | "accepted" | "rejected" | "completed" | "cancelled";
 export type AchievementRarity = "bronze" | "silver" | "gold" | "platinum" | "diamond";
 
+// TCG-specific types
+export type TCGRegion = "EN" | "JP" | "ZHT";
+export type TCGPackaging = "ETB" | "Booster Box" | "Boaler Bundle" | "Sealed Case";
+
+export interface PokemonMetadata {
+  set_code: string;
+  has_masterball_holos: boolean;
+  major_mascot_characters: string[];
+}
+
+export interface PriceMatrix {
+  estimated_wholesale_floor_hkd: number;
+  sino_centre_street_ceiling_hkd: number;
+  live_carousell_floor_hkd: number;
+  last_updated: string;
+}
+
+export interface CollectibleListing<T = PokemonMetadata> {
+  id: string;
+  product_name: string;
+  language: TCGRegion;
+  packaging_type: TCGPackaging;
+  condition: "Factory Sealed" | "Unsealed" | "Damaged Wrap";
+  is_pokemon_center_exclusive: boolean;
+  metadata: T;
+  pricing_metrics: PriceMatrix;
+  arbitrage_yield_percentage: number;
+}
+
+// Commission tier based on transaction volume
+export type CommissionTier = "seed" | "sprout" | "bloom" | "harvest" | "estate";
+
+export interface CommissionModifier {
+  tier: CommissionTier;
+  rate: number; // percentage (e.g., 12 means 12%)
+  min_transactions: number;
+  xp_threshold: number;
+}
+
 export interface Database {
   public: {
     Tables: {

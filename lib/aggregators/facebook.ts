@@ -217,8 +217,7 @@ function parseListings(html: string, category: string): FacebookMarketplaceListi
       priceText = priceTextEl.text().trim();
       const priceMatch = priceText.match(/[\d,]+/);
       if (priceMatch) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const rawPrice = priceMatch[0]!.replace(/,/g, "");
+        const rawPrice = priceMatch[0]?.replace(/,/g, "") || "";
         price = parseInt(rawPrice, 10);
         if (isNaN(price)) price = null;
       }
@@ -337,7 +336,6 @@ export function mapToAggregatorListing(
     hasDescription: !!fb.description,
   });
 
-  const now = new Date();
   return {
     id: fb.id,
     source: "facebook_marketplace",

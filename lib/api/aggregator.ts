@@ -13,10 +13,13 @@ export interface AggregatorFilters {
   offset?: number;
 }
 
-type AggregatorApiResponse<T> = {
+export type AggregatorApiResponse<T> = {
   data: T;
   fallback: boolean;
   fallbackReason?: string;
+  source?: string;
+  liveCount?: number;
+  totalCount?: number;
 };
 
 function buildQueryString(filters: AggregatorFilters) {
@@ -89,6 +92,73 @@ export async function getSources() {
       fallback: true,
       fallbackReason: "client_fetch_error",
     };
+  }
+}
+
+/**
+ * Fetch TCG sets for the set browser
+ */
+export interface TCGSet {
+  id: string;
+  name: string;
+  code: string;
+  releaseDate: string;
+  symbolUrl: string;
+  logoUrl: string;
+  printedTotal: number;
+  total: number;
+}
+
+export async function getTcgSets(): Promise<AggregatorApiResponse<TCGSet[]>> {
+  try {
+    return await fetchAggregator<TCGSet[]>("sets=1");
+  } catch {
+    return {
+      data: [],
+      fallback: true,
+      fallbackReason: "client_fetch_error",
+    };
+  }
+}
+
+/**
+ * Fetch full price breakdown for a specific card
+ */
+export interface CardPriceBreakdown {
+  cardId: string;
+  cardName: string;
+  setName: string;
+  setCode: string;
+  rarity: string;
+  imageUrl: string | null;
+  tcgplayerUrl: string;
+  cardmarketUrl: string;
+  lastUpdated: string;
+  variants: {
+    name: string;
+    tcgplayer?: { low: number; mid: number; market: number; high: number };
+    cardmarket?: { low: number; trend: number; avg: number };
+  }[];
+  bestPriceHKD: number;
+  bestPriceUSD: number;
+  bestPriceSource: string;
+  dealScore: number;
+  isDeal: boolean;
+}
+
+export async function getCardPriceBreakdown(
+  cardName: string,
+): Promise<CardPriceBreakdown | null> {
+  try {
+    const response = await fetch(
+      `/api/aggregator/card-breakdown?card=${encodeURIComponent(cardName)}`,
+      { cache: "no-store" },
+    );
+    if (!response.ok) return null;
+    const json = (await response.json()) as { data: CardPriceBreakdown | null };
+    return json.data;
+  } catch {
+    return null;
   }
 }
 

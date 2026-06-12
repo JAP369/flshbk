@@ -145,3 +145,16 @@ body {
   animation: ticker-scroll 30s linear infinite;
 }
 .ticker-inner:hover { animation-play-state: paused; }
+
+/* Shimmer skeleton animation */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.animate-shimmer {
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

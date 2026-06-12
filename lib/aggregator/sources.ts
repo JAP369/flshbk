@@ -20,6 +20,22 @@ export interface MarketplaceSource {
 
 export const MARKETPLACE_SOURCES: MarketplaceSource[] = [
   {
+    id: "tcgplayer",
+    name: "TCGPlayer",
+    baseUrl: "https://www.tcgplayer.com",
+    icon: "🃏",
+    color: "#0D6EFD",
+    enabled: true,
+  },
+  {
+    id: "cardmarket",
+    name: "CardMarket",
+    baseUrl: "https://www.cardmarket.com",
+    icon: "🇪🇺",
+    color: "#FF6600",
+    enabled: true,
+  },
+  {
     id: "carousell",
     name: "Carousell HK",
     baseUrl: "https://www.carousell.com.hk",
@@ -50,22 +66,6 @@ export const MARKETPLACE_SOURCES: MarketplaceSource[] = [
     icon: "🤖",
     color: "#FF4500",
     enabled: true,
-  },
-  {
-    id: "tcgplayer",
-    name: "TCGplayer",
-    baseUrl: "https://www.tcgplayer.com",
-    icon: "🃏",
-    color: "#6B21A8",
-    enabled: false, // US-based, not HK
-  },
-  {
-    id: "cardmarket",
-    name: "Cardmarket",
-    baseUrl: "https://www.cardmarket.com",
-    icon: "🇪🇺",
-    color: "#0066CC",
-    enabled: false, // EU-based
   },
 ];
 
