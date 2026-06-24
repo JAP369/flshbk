@@ -10,7 +10,6 @@ import {
   Shield,
   Zap,
   Lock,
-  ChevronRight,
   RefreshCw,
   Loader2,
   Scale,
@@ -18,8 +17,6 @@ import {
 import {
   PortfolioAsset,
   PortfolioSummary,
-  AllocationAlert,
-  MASTER_CAPITAL_POOL_HKD,
   LEFT_SIDE_TARGET_PERCENTAGE,
   RIGHT_SIDE_TARGET_PERCENTAGE,
   LEFT_SIDE_ALERT_THRESHOLD,
@@ -28,6 +25,17 @@ import {
   fetchPortfolioAssets,
   fetchPortfolioSummary,
 } from "@/lib/supabase-client";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface AllocationAlert {
+  type: "warning" | "danger";
+  message: string;
+  current_value: number;
+  threshold: number;
+}
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -128,7 +136,7 @@ export function BarbellDashboard() {
 
   return (
     <div className='min-h-screen pt-20 pb-12 bg-background'>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -10 }}
@@ -203,7 +211,7 @@ export function BarbellDashboard() {
 function LoadingState() {
   return (
     <div className='min-h-screen pt-20 flex items-center justify-center'>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='text-center'>
           <Loader2 className='w-10 h-10 text-accent animate-spin mx-auto mb-4' />
           <p className='text-silver'>Loading portfolio data...</p>
@@ -226,7 +234,7 @@ function ErrorState({
 }) {
   return (
     <div className='min-h-screen pt-20 flex items-center justify-center'>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='text-center max-w-md mx-auto'>
           <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center'>
             <AlertTriangle className='w-8 h-8 text-red-500' />
@@ -254,7 +262,7 @@ function ErrorState({
 function EmptyState() {
   return (
     <div className='min-h-screen pt-20 flex items-center justify-center'>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className='w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='text-center max-w-md mx-auto'>
           <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-surface-elevated flex items-center justify-center'>
             <Wallet className='w-8 h-8 text-silver' />
@@ -671,14 +679,12 @@ function SidePanel({
 function AssetRow({
   asset,
   index,
-  side,
 }: {
   asset: PortfolioAsset;
   index: number;
   side: "left" | "right";
 }) {
   const isPositive = asset.unrealized_pnl_hkd >= 0;
-  const isLeft = side === "left";
 
   return (
     <motion.div
