@@ -3,15 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Home, Swords, Package, Ticket, MapPin, Search } from "lucide-react";
+import {
+  Home,
+  Swords,
+  Package,
+  Ticket,
+  MapPin,
+  Search,
+  Briefcase,
+  TrendingUp,
+} from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Portal", icon: Home },
   { href: "/aggregator", label: "Find", icon: Search },
+  { href: "/collection", label: "Collection", icon: Briefcase },
+  { href: "/arbitrage", label: "Arbitrage", icon: TrendingUp },
   { href: "/trade", label: "Arena", icon: Swords },
   { href: "/vault", label: "Vault", icon: Package },
-  { href: "/draw", label: "Lucky", icon: Ticket },
-  { href: "/meetup", label: "Meetup", icon: MapPin },
 ];
 
 export default function BottomNav() {

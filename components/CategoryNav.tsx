@@ -4,7 +4,21 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Settings, ChevronDown, LogOut, Zap, User, ShieldCheck } from "lucide-react";
+import {
+  Menu,
+  X,
+  Settings,
+  ChevronDown,
+  LogOut,
+  Zap,
+  User,
+  ShieldCheck,
+  Briefcase,
+  TrendingUp,
+  BarChart3,
+  Grid3X3,
+  Package,
+} from "lucide-react";
 import { CATEGORIES } from "@/lib/data/categories";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEV_USERS } from "@/contexts/AuthContext";
@@ -44,31 +58,32 @@ export default function CategoryNav() {
 
         {/* Center — categories */}
         <div className='flex items-center gap-1'>
-          {isAuthenticated && CATEGORIES.map((cat) => (
-            <Link key={cat.id} href={cat.href}>
-              <motion.div
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveTab(cat.href)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                  isActive(cat.href)
-                    ? "border"
-                    : "text-[#f0ede6]/50 hover:text-[#f0ede6]/80 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
-                }`}
-                style={
-                  isActive(cat.href)
-                    ? {
-                        background: `${cat.color}15`,
-                        color: cat.color,
-                        borderColor: `${cat.color}40`,
-                      }
-                    : {}
-                }
-              >
-                <span>{cat.emoji}</span>
-                <span>{cat.name}</span>
-              </motion.div>
-            </Link>
-          ))}
+          {isAuthenticated &&
+            CATEGORIES.map((cat) => (
+              <Link key={cat.id} href={cat.href}>
+                <motion.div
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab(cat.href)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    isActive(cat.href)
+                      ? "border"
+                      : "text-[#f0ede6]/50 hover:text-[#f0ede6]/80 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
+                  }`}
+                  style={
+                    isActive(cat.href)
+                      ? {
+                          background: `${cat.color}15`,
+                          color: cat.color,
+                          borderColor: `${cat.color}40`,
+                        }
+                      : {}
+                  }
+                >
+                  <span>{cat.emoji}</span>
+                  <span>{cat.name}</span>
+                </motion.div>
+              </Link>
+            ))}
         </div>
 
         {/* Right — settings */}
@@ -137,7 +152,11 @@ export default function CategoryNav() {
               <ChevronDown
                 size={10}
                 className='transition-transform duration-200'
-                style={{ transform: authDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                style={{
+                  transform: authDropdownOpen
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
+                }}
               />
             </motion.button>
 
@@ -164,7 +183,12 @@ export default function CategoryNav() {
                     }}
                   >
                     {isAuthenticated && user && (
-                      <div className='px-3 py-3' style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div
+                        className='px-3 py-3'
+                        style={{
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        }}
+                      >
                         <div className='flex items-center justify-between'>
                           <div className='flex items-center gap-2'>
                             <div className='w-9 h-9 rounded-full bg-[rgba(0,200,100,0.15)] flex items-center justify-center text-sm font-bold text-emerald-400'>
@@ -186,15 +210,21 @@ export default function CategoryNav() {
                         </div>
                         <div className='grid grid-cols-3 gap-2 mt-3 pt-2 border-t border-[rgba(255,255,255,0.04)]'>
                           <div className='text-center'>
-                            <p className='text-xs font-bold text-white'>{user.xp}</p>
+                            <p className='text-xs font-bold text-white'>
+                              {user.xp}
+                            </p>
                             <p className='text-[8px] text-white/30'>XP</p>
                           </div>
                           <div className='text-center'>
-                            <p className='text-xs font-bold text-white'>{user.verifiedTrades}</p>
+                            <p className='text-xs font-bold text-white'>
+                              {user.verifiedTrades}
+                            </p>
                             <p className='text-[8px] text-white/30'>Trades</p>
                           </div>
                           <div className='text-center'>
-                            <p className='text-xs font-bold text-white'>{user.streakCount}🔥</p>
+                            <p className='text-xs font-bold text-white'>
+                              {user.streakCount}🔥
+                            </p>
                             <p className='text-[8px] text-white/30'>Streak</p>
                           </div>
                         </div>
@@ -205,10 +235,14 @@ export default function CategoryNav() {
                       {!isAuthenticated ? (
                         <motion.button
                           whileTap={{ scale: 0.97 }}
-                          onClick={() => { signIn(DEV_USERS[0]); setAuthDropdownOpen(false); }}
+                          onClick={() => {
+                            signIn(DEV_USERS[0]);
+                            setAuthDropdownOpen(false);
+                          }}
                           className='w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black text-white'
                           style={{
-                            background: "linear-gradient(135deg, #00c864, #00a050)",
+                            background:
+                              "linear-gradient(135deg, #00c864, #00a050)",
                             boxShadow: "0 0 16px rgba(0,200,100,0.3)",
                           }}
                         >
@@ -225,21 +259,73 @@ export default function CategoryNav() {
                               className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
                             >
                               <User size={14} className='text-white/50' />
-                              <span className='text-xs text-white/70'>View Profile</span>
+                              <span className='text-xs text-white/70'>
+                                View Profile
+                              </span>
                             </motion.button>
                           </Link>
-                          <Link href='/vault' onClick={() => setAuthDropdownOpen(false)}>
+                          <Link
+                            href='/collection'
+                            onClick={() => setAuthDropdownOpen(false)}
+                          >
+                            <motion.button
+                              whileTap={{ scale: 0.97 }}
+                              className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
+                            >
+                              <Briefcase size={14} className='text-white/50' />
+                              <span className='text-xs text-white/70'>
+                                My Collection
+                              </span>
+                            </motion.button>
+                          </Link>
+                          <Link
+                            href='/arbitrage'
+                            onClick={() => setAuthDropdownOpen(false)}
+                          >
+                            <motion.button
+                              whileTap={{ scale: 0.97 }}
+                              className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
+                            >
+                              <TrendingUp size={14} className='text-white/50' />
+                              <span className='text-xs text-white/70'>
+                                Arbitrage
+                              </span>
+                            </motion.button>
+                          </Link>
+                          <Link
+                            href='/vault'
+                            onClick={() => setAuthDropdownOpen(false)}
+                          >
                             <motion.button
                               whileTap={{ scale: 0.97 }}
                               className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
                             >
                               <Zap size={14} className='text-white/50' />
-                              <span className='text-xs text-white/70'>My Vault</span>
+                              <span className='text-xs text-white/70'>
+                                My Vault
+                              </span>
+                            </motion.button>
+                          </Link>
+                          <Link
+                            href='/dashboard'
+                            onClick={() => setAuthDropdownOpen(false)}
+                          >
+                            <motion.button
+                              whileTap={{ scale: 0.97 }}
+                              className='w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-white/5'
+                            >
+                              <Package size={14} className='text-white/50' />
+                              <span className='text-xs text-white/70'>
+                                Dashboard
+                              </span>
                             </motion.button>
                           </Link>
                           <motion.button
                             whileTap={{ scale: 0.97 }}
-                            onClick={() => { signOut(); setAuthDropdownOpen(false); }}
+                            onClick={() => {
+                              signOut();
+                              setAuthDropdownOpen(false);
+                            }}
                             className='w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-red-400'
                             style={{
                               background: "rgba(255,45,45,0.1)",
@@ -339,8 +425,88 @@ export default function CategoryNav() {
                     ))}
 
                     <div className='h-px bg-[rgba(245,245,220,0.06)] my-1' />
+
+                    <p className='text-[9px] font-mono uppercase tracking-widest text-white/20 px-3 py-1 mt-2'>
+                      Quick Access
+                    </p>
                   </>
                 )}
+
+                {/* New Pages */}
+                <Link
+                  href='/collection'
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold ${
+                      isActive("/collection")
+                        ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6]"
+                        : "text-[#f0ede6]/60"
+                    }`}
+                  >
+                    <Briefcase size={18} />
+                    <span>My Collection</span>
+                  </div>
+                </Link>
+                <Link
+                  href='/arbitrage'
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold ${
+                      isActive("/arbitrage")
+                        ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6]"
+                        : "text-[#f0ede6]/60"
+                    }`}
+                  >
+                    <TrendingUp size={18} />
+                    <span>Arbitrage</span>
+                  </div>
+                </Link>
+                <Link
+                  href='/vault/projections'
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold ${
+                      isActive("/vault/projections")
+                        ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6]"
+                        : "text-[#f0ede6]/60"
+                    }`}
+                  >
+                    <BarChart3 size={18} />
+                    <span>Vault Projections</span>
+                  </div>
+                </Link>
+                <Link href='/screener' onClick={() => setMobileMenuOpen(false)}>
+                  <div
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold ${
+                      isActive("/screener")
+                        ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6]"
+                        : "text-[#f0ede6]/60"
+                    }`}
+                  >
+                    <Grid3X3 size={18} />
+                    <span>Pop Screener</span>
+                  </div>
+                </Link>
+                <Link
+                  href='/dashboard'
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold ${
+                      isActive("/dashboard")
+                        ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6]"
+                        : "text-[#f0ede6]/60"
+                    }`}
+                  >
+                    <Package size={18} />
+                    <span>Dashboard</span>
+                  </div>
+                </Link>
+
+                <div className='h-px bg-[rgba(245,245,220,0.06)] my-1' />
 
                 <Link href='/settings' onClick={() => setMobileMenuOpen(false)}>
                   <div
