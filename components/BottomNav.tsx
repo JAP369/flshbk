@@ -7,8 +7,7 @@ import {
   Home,
   Swords,
   Package,
-  Ticket,
-  MapPin,
+  BarChart3,
   Search,
   Briefcase,
   TrendingUp,
@@ -18,7 +17,7 @@ const navItems = [
   { href: "/", label: "Portal", icon: Home },
   { href: "/aggregator", label: "Find", icon: Search },
   { href: "/collection", label: "Collection", icon: Briefcase },
-  { href: "/arbitrage", label: "Arbitrage", icon: TrendingUp },
+  { href: "/portfolio", label: "Portfolio", icon: BarChart3 },
   { href: "/trade", label: "Arena", icon: Swords },
   { href: "/vault", label: "Vault", icon: Package },
 ];

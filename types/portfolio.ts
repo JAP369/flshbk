@@ -1,5 +1,9 @@
 // =============================================================================
-// PORTFOLIO ASSET TYPES
+// PORTFOLIO TYPES - Multi-TCG Collectible Tracking
+// =============================================================================
+
+// =============================================================================
+// ENUMS
 // =============================================================================
 
 export type AllocationSide = "left" | "right";
@@ -14,6 +18,12 @@ export type AssetType =
   | "premium_slab"
   | "cash"
   | "bond";
+
+export type TimeRange = "1D" | "7D" | "1M" | "3M" | "6M" | "MAX";
+
+// =============================================================================
+// BARBELL DASHBOARD TYPES
+// =============================================================================
 
 export interface PortfolioAsset {
   id: string;
@@ -60,3 +70,44 @@ export const LEFT_SIDE_TARGET_PERCENTAGE = 20;
 export const RIGHT_SIDE_TARGET_PERCENTAGE = 80;
 
 export const LEFT_SIDE_ALERT_THRESHOLD = 30;
+
+// =============================================================================
+// COLLECTION GRID TYPES
+// =============================================================================
+
+export interface CollectionHolding {
+  id: string;
+  name: string;
+  setName: string;
+  setCode: string;
+  cardNumber: string | null;
+  rarity: string | null;
+  imageUrl: string | null;
+  grade: string;
+  quantity: number;
+  purchasePriceHkd: number;
+  currentPriceHkd: number;
+  priceChange30d: number;
+  allocationSide: "left_velocity" | "right_vault";
+}
+
+export interface CollectionSummary {
+  totalValueHkd: number;
+  totalCostHkd: number;
+  totalPnlHkd: number;
+  pnlPercentage: number;
+  change30dHkd: number;
+  change30dPercent: number;
+  topHoldings: CollectionHolding[];
+}
+
+export interface ChartDataPoint {
+  date: string;
+  value: number;
+}
+
+export interface TimeSeriesPoint {
+  timestamp: number;
+  date: string;
+  value: number;
+}
