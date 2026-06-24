@@ -9,11 +9,7 @@ import {
   TrendingDown,
   Minus,
   Package,
-  Swords,
-  BarChart3,
-  Home,
   X,
-  ChevronDown,
   Filter,
   Sparkles,
   Shield,
@@ -269,7 +265,6 @@ export function CollectionGrid() {
     itemTypeFilter: "all",
   });
   const [showFilterSheet, setShowFilterSheet] = useState(false);
-  const [activeTab, setActiveTab] = useState<"home" | "search" | "arbitrage" | "portfolio">("home");
 
   // Filter and sort items
   const filteredItems = useMemo(() => {
@@ -283,21 +278,21 @@ export function CollectionGrid() {
           item.name.toLowerCase().includes(query) ||
           item.setName.toLowerCase().includes(query) ||
           item.setCode.toLowerCase().includes(query) ||
-          (item.cardNumber && item.cardNumber.toLowerCase().includes(query))
+          (item.cardNumber && item.cardNumber.toLowerCase().includes(query)),
       );
     }
 
     // Allocation filter
     if (filterState.allocationFilter !== "all") {
       items = items.filter(
-        (item) => item.allocationSide === filterState.allocationFilter
+        (item) => item.allocationSide === filterState.allocationFilter,
       );
     }
 
     // Item type filter
     if (filterState.itemTypeFilter !== "all") {
       items = items.filter(
-        (item) => item.itemType === filterState.itemTypeFilter
+        (item) => item.itemType === filterState.itemTypeFilter,
       );
     }
 
@@ -326,14 +321,17 @@ export function CollectionGrid() {
 
   // Calculate summary
   const summary = useMemo(() => {
-    const totalQuantity = DUMMY_ITEMS.reduce((sum, item) => sum + item.quantity, 0);
+    const totalQuantity = DUMMY_ITEMS.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
     const totalInvested = DUMMY_ITEMS.reduce(
       (sum, item) => sum + item.purchasePriceHkd * item.quantity,
-      0
+      0,
     );
     const totalCurrent = DUMMY_ITEMS.reduce(
       (sum, item) => sum + item.currentValueHkd * item.quantity,
-      0
+      0,
     );
     const pnl = totalCurrent - totalInvested;
     const pnlPct = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
@@ -346,10 +344,10 @@ export function CollectionGrid() {
       totalUnrealizedPnlHkd: pnl,
       pnlPercentage: pnlPct,
       leftVelocityCount: DUMMY_ITEMS.filter(
-        (i) => i.allocationSide === "left_velocity"
+        (i) => i.allocationSide === "left_velocity",
       ).length,
       rightVaultCount: DUMMY_ITEMS.filter(
-        (i) => i.allocationSide === "right_vault"
+        (i) => i.allocationSide === "right_vault",
       ).length,
     };
   }, []);
@@ -367,7 +365,7 @@ export function CollectionGrid() {
       setFilterState((prev) => ({ ...prev, allocationFilter: allocation }));
       setShowFilterSheet(false);
     },
-    []
+    [],
   );
 
   const handleItemTypeFilter = useCallback(
@@ -375,7 +373,7 @@ export function CollectionGrid() {
       setFilterState((prev) => ({ ...prev, itemTypeFilter: itemType }));
       setShowFilterSheet(false);
     },
-    []
+    [],
   );
 
   return (
@@ -423,7 +421,7 @@ export function CollectionGrid() {
             </div>
             <div
               className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${getPnlBgColor(
-                summary.pnlPercentage
+                summary.pnlPercentage,
               )}`}
             >
               {summary.pnlPercentage > 0 ? (
@@ -435,7 +433,7 @@ export function CollectionGrid() {
               )}
               <span
                 className={`text-xs font-medium ${getPnlColor(
-                  summary.pnlPercentage
+                  summary.pnlPercentage,
                 )}`}
               >
                 {formatPercentage(summary.pnlPercentage)}
@@ -522,7 +520,10 @@ export function CollectionGrid() {
                         key={option.value}
                         onClick={() =>
                           handleAllocationFilter(
-                            option.value as "all" | "left_velocity" | "right_vault"
+                            option.value as
+                              | "all"
+                              | "left_velocity"
+                              | "right_vault",
                           )
                         }
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
@@ -558,7 +559,7 @@ export function CollectionGrid() {
                               | "all"
                               | "singles"
                               | "sealed_box"
-                              | "booster_bundle"
+                              | "booster_bundle",
                           )
                         }
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
@@ -623,9 +624,6 @@ export function CollectionGrid() {
           </div>
         )}
       </div>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }
@@ -643,13 +641,13 @@ function CollectionCard({ item }: { item: CollectionItem }) {
     <motion.div
       whileHover={{ y: -2 }}
       className={`glass-card rounded-xl overflow-hidden border ${getGradeBorderColor(
-        item.grade
+        item.grade,
       )} transition-all hover:shadow-lg hover:shadow-black/20`}
     >
       {/* Grade Badge Header */}
       <div
         className={`${getGradeColor(
-          item.grade
+          item.grade,
         )} px-3 py-1.5 flex items-center justify-between`}
       >
         <span className="text-xs font-bold text-white tracking-wide">
@@ -725,7 +723,7 @@ function CollectionCard({ item }: { item: CollectionItem }) {
             <span className="text-xs text-slate-400">30d</span>
             <div
               className={`flex items-center gap-0.5 ${getPnlColor(
-                item.priceChange30d
+                item.priceChange30d,
               )}`}
             >
               {item.priceChangeDirection === "up" ? (
@@ -743,56 +741,5 @@ function CollectionCard({ item }: { item: CollectionItem }) {
         </div>
       </div>
     </motion.div>
-  );
-}
-
-// =============================================================================
-// BOTTOM NAVIGATION COMPONENT
-// =============================================================================
-
-function BottomNavigation({
-  activeTab,
-  onTabChange,
-}: {
-  activeTab: "home" | "search" | "arbitrage" | "portfolio";
-  onTabChange: (tab: "home" | "search" | "arbitrage" | "portfolio") => void;
-}) {
-  const tabs = [
-    { id: "home" as const, label: "Home", icon: Home },
-    { id: "search" as const, label: "Search", icon: Search },
-    { id: "arbitrage" as const, label: "Arbitrage", icon: Swords },
-    { id: "portfolio" as const, label: "Portfolio", icon: BarChart3 },
-  ];
-
-  return (
-    <div className="fixed bottom-0 inset-x-0 z-50 glass-strong border-t border-border">
-      <div className="flex items-center justify-around px-2 py-2">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
-                isActive
-                  ? "bg-accent/10 text-accent"
-                  : "text-slate-400 hover:text-foreground"
-              }`}
-            >
-              <tab.icon className={`w-5 h-5 ${isActive ? "text-accent" : ""}`} />
-              <span className="text-[10px] font-medium">{tab.label}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="bottomNavIndicator"
-                  className="absolute -top-0.5 w-8 h-0.5 rounded-full bg-accent"
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
-      {/* Safe area padding for iOS */}
-      <div className="h-safe-area-inset-bottom" />
-    </div>
   );
 }
