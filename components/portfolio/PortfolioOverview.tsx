@@ -11,6 +11,10 @@ import {
   ArrowDownRight,
   Activity,
   BarChart3,
+  Package,
+  Shield,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   AreaChart,
@@ -60,6 +64,10 @@ const TIME_RANGES: { value: TimeRange; label: string }[] = [
 interface HoldingWithVolatility extends CollectionHolding {
   volatilityIndex: number;
   volatilityLevel: "low" | "moderate" | "high" | "extreme";
+  totalValue: number;
+  totalCost: number;
+  unrealizedPnl: number;
+  pnlPercent: number;
 }
 
 // =============================================================================
@@ -68,58 +76,114 @@ interface HoldingWithVolatility extends CollectionHolding {
 
 export function PortfolioOverview() {
   const [selectedRange, setSelectedRange] = useState<TimeRange>("1M");
+  const [holdingsView, setHoldingsView] = useState<"table" | "cards">("table");
+  const [isHoldingsExpanded, setIsHoldingsExpanded] = useState(true);
+  const [sortKey, setSortKey] = useState<"value" | "pnl" | "name" | "qty">("value");
+  const [sortAsc, setSortAsc] = useState(false);
 
   // Build portfolio summary
   const summary: CollectionSummary = useMemo(
     () => buildPortfolioSummary(PORTFOLIO_HOLDINGS),
-    [],
+    []
   );
 
   // Generate chart data
   const chartData = useMemo(
     () => generateTimeSeriesData(PORTFOLIO_HOLDINGS, selectedRange),
-    [selectedRange],
+    [selectedRange]
   );
 
   // Calculate period change
   const periodChange = useMemo(
     () => calculatePeriodChange(PORTFOLIO_HOLDINGS, selectedRange),
-    [selectedRange],
+    [selectedRange]
   );
 
   // Calculate portfolio-wide volatility
-  const holdingsWithVolatility: HoldingWithVolatility[] = useMemo(() => {
+  const holdingsWithMeta: HoldingWithVolatility[] = useMemo(() => {
     return PORTFOLIO_HOLDINGS.map((holding) => {
       const volatilityIndex = calculateHoldingVolatility(
         holding.currentPriceHkd,
         holding.purchasePriceHkd,
-        holding.priceChange30d,
+        holding.priceChange30d
       );
       const volatilityLevel = getVolatilityLevel(volatilityIndex);
+      const totalValue = holding.currentPriceHkd * holding.quantity;
+      const totalCost = holding.purchasePriceHkd * holding.quantity;
+      const unrealizedPnl = totalValue - totalCost;
+      const pnlPercent = totalCost > 0 ? (unrealizedPnl / totalCost) * 100 : 0;
+
       return {
         ...holding,
         volatilityIndex,
         volatilityLevel,
+        totalValue,
+        totalCost,
+        unrealizedPnl,
+        pnlPercent,
       };
     });
   }, []);
 
+  // Sort holdings
+  const sortedHoldings = useMemo(() => {
+    const sorted = [...holdingsWithMeta];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "value":
+          cmp = a.totalValue - b.totalValue;
+          break;
+        case "pnl":
+          cmp = a.unrealizedPnl - b.unrealizedPnl;
+          break;
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "qty":
+          cmp = a.quantity - b.quantity;
+          break;
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+    return sorted;
+  }, [holdingsWithMeta, sortKey, sortAsc]);
+
   const portfolioVolatility = useMemo(() => {
-    if (holdingsWithVolatility.length === 0) return 0;
+    if (holdingsWithMeta.length === 0) return 0;
     return (
-      holdingsWithVolatility.reduce((sum, h) => sum + h.volatilityIndex, 0) /
-      holdingsWithVolatility.length
+      holdingsWithMeta.reduce((sum, h) => sum + h.volatilityIndex, 0) /
+      holdingsWithMeta.length
     );
-  }, [holdingsWithVolatility]);
+  }, [holdingsWithMeta]);
 
   const highVolatilityCount = useMemo(
-    () => holdingsWithVolatility.filter((h) => h.volatilityLevel === "high" || h.volatilityLevel === "extreme").length,
-    [holdingsWithVolatility],
+    () =>
+      holdingsWithMeta.filter(
+        (h) => h.volatilityLevel === "high" || h.volatilityLevel === "extreme"
+      ).length,
+    [holdingsWithMeta]
   );
 
   // Determine if change is positive
   const isPositive = periodChange.changeHkd >= 0;
   const isPortfolioVolatile = portfolioVolatility >= 25;
+
+  // Sort toggle
+  const handleSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(false);
+    }
+  };
+
+  // Totals
+  const totalValue = holdingsWithMeta.reduce((s, h) => s + h.totalValue, 0);
+  const totalCost = holdingsWithMeta.reduce((s, h) => s + h.totalCost, 0);
+  const totalPnl = totalValue - totalCost;
+  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -143,8 +207,311 @@ export function PortfolioOverview() {
       {/* Sales History Chart */}
       <SalesHistoryChart showHeader={true} itemName="Portfolio Aggregate" />
 
+      {/* Holdings Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="glass-card rounded-2xl border border-border overflow-hidden"
+      >
+        {/* Holdings Header */}
+        <button
+          onClick={() => setIsHoldingsExpanded(!isHoldingsExpanded)}
+          className="w-full flex items-center justify-between p-4 hover:bg-surface-elevated/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Package className="w-5 h-5 text-accent" />
+            <h3 className="text-sm font-semibold text-foreground">
+              All Holdings ({PORTFOLIO_HOLDINGS.length})
+            </h3>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Total Value</p>
+              <p className="text-sm font-bold text-foreground">{formatHKD(totalValue)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Total P&L</p>
+              <p className={`text-sm font-bold ${totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {totalPnl >= 0 ? "+" : ""}{formatHKD(totalPnl)} ({totalPnlPct >= 0 ? "+" : ""}{totalPnlPct.toFixed(1)}%)
+              </p>
+            </div>
+            {isHoldingsExpanded ? (
+              <ChevronUp className="w-4 h-4 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {isHoldingsExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              {/* View Toggle */}
+              <div className="flex items-center justify-between px-4 pb-3 border-b border-border">
+                <div className="flex items-center gap-1 p-1 bg-surface-rounded-lg">
+                  <button
+                    onClick={() => setHoldingsView("table")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      holdingsView === "table"
+                        ? "bg-accent text-background"
+                        : "text-slate-400 hover:text-foreground"
+                    }`}
+                  >
+                    Table
+                  </button>
+                  <button
+                    onClick={() => setHoldingsView("cards")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      holdingsView === "cards"
+                        ? "bg-accent text-background"
+                        : "text-slate-400 hover:text-foreground"
+                    }`}
+                  >
+                    Cards
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {holdingsWithMeta.filter(h => h.grade === "Sealed").length} sealed · {holdingsWithMeta.filter(h => h.grade !== "Sealed").length} slabs
+                </p>
+              </div>
+
+              {holdingsView === "table" ? (
+                <HoldingsTable holdings={sortedHoldings} onSort={handleSort} sortKey={sortKey} sortAsc={sortAsc} />
+              ) : (
+                <HoldingsCards holdings={sortedHoldings} />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
       {/* Top Holdings Marquee */}
-      <TopHoldingsMarquee holdings={holdingsWithVolatility} />
+      <TopHoldingsMarquee holdings={holdingsWithMeta} />
+    </div>
+  );
+}
+
+// =============================================================================
+// HOLDINGS TABLE COMPONENT
+// =============================================================================
+
+function HoldingsTable({
+  holdings,
+  onSort,
+  sortKey,
+  sortAsc,
+}: {
+  holdings: HoldingWithVolatility[];
+  onSort: (key: "value" | "pnl" | "name" | "qty") => void;
+  sortKey: string;
+  sortAsc: boolean;
+}) {
+  const SortIcon = ({ col }: { col: string }) => {
+    if (sortKey !== col) return <ChevronDown className="w-3 h-3 text-slate-600" />;
+    return sortAsc ? (
+      <ChevronUp className="w-3 h-3 text-accent" />
+    ) : (
+      <ChevronDown className="w-3 h-3 text-accent" />
+    );
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border text-left">
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider">
+              <button onClick={() => onSort("name")} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                Asset <SortIcon col="name" />
+              </button>
+            </th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-center">Type</th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-center">
+              <button onClick={() => onSort("qty")} className="flex items-center gap-1 hover:text-foreground transition-colors mx-auto">
+                Qty <SortIcon col="qty" />
+              </button>
+            </th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-right">Cost</th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-right">Current</th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-right">
+              <button onClick={() => onSort("value")} className="flex items-center gap-1 hover:text-foreground transition-colors ml-auto">
+                Value <SortIcon col="value" />
+              </button>
+            </th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-right">
+              <button onClick={() => onSort("pnl")} className="flex items-center gap-1 hover:text-foreground transition-colors ml-auto">
+                P&L <SortIcon col="pnl" />
+              </button>
+            </th>
+            <th className="px-4 py-3 text-xs text-slate-400 font-medium uppercase tracking-wider text-right">30d</th>
+          </tr>
+        </thead>
+        <tbody>
+          {holdings.map((holding, idx) => (
+            <tr
+              key={holding.id}
+              className="border-b border-border/50 hover:bg-surface-elevated/30 transition-colors"
+            >
+              {/* Asset Name */}
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  {holding.grade === "Sealed" ? (
+                    <Package className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                  ) : (
+                    <Shield className="w-4 h-4 text-sky-400 flex-shrink-0" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                      {holding.name}
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate">{holding.setName}</p>
+                  </div>
+                </div>
+              </td>
+
+              {/* Type */}
+              <td className="px-4 py-3 text-center">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                  holding.grade === "Sealed"
+                    ? "bg-violet-500/10 text-violet-400"
+                    : "bg-sky-500/10 text-sky-400"
+                }`}>
+                  {holding.grade === "Sealed" ? "Sealed" : holding.grade}
+                </span>
+              </td>
+
+              {/* Qty */}
+              <td className="px-4 py-3 text-center">
+                <span className="text-sm text-foreground font-mono">{holding.quantity}</span>
+              </td>
+
+              {/* Cost (unit) */}
+              <td className="px-4 py-3 text-right">
+                <span className="text-xs text-slate-400">{formatHKD(holding.purchasePriceHkd)}</span>
+              </td>
+
+              {/* Current (unit) */}
+              <td className="px-4 py-3 text-right">
+                <span className="text-sm text-slate-300">{formatHKD(holding.currentPriceHkd)}</span>
+              </td>
+
+              {/* Total Value */}
+              <td className="px-4 py-3 text-right">
+                <span className="text-sm font-semibold text-foreground">{formatHKD(holding.totalValue)}</span>
+              </td>
+
+              {/* P&L */}
+              <td className="px-4 py-3 text-right">
+                <div className={`flex items-center justify-end gap-0.5 ${holding.unrealizedPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {holding.unrealizedPnl >= 0 ? (
+                    <ArrowUpRight className="w-3 h-3" />
+                  ) : (
+                    <ArrowDownRight className="w-3 h-3" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {holding.unrealizedPnl >= 0 ? "+" : ""}{formatHKD(holding.unrealizedPnl)}
+                  </span>
+                </div>
+                <span className={`text-[10px] ${holding.unrealizedPnl >= 0 ? "text-emerald-400/70" : "text-red-400/70"}`}>
+                  {holding.pnlPercent >= 0 ? "+" : ""}{holding.pnlPercent.toFixed(1)}%
+                </span>
+              </td>
+
+              {/* 30d Change */}
+              <td className="px-4 py-3 text-right">
+                <span className={`text-xs font-medium ${holding.priceChange30d >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {holding.priceChange30d >= 0 ? "+" : ""}{holding.priceChange30d.toFixed(1)}%
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t border-border bg-surface-elevated/30">
+            <td className="px-4 py-3" colSpan={2}>
+              <span className="text-sm font-semibold text-foreground">TOTAL</span>
+            </td>
+            <td className="px-4 py-3 text-center">
+              <span className="text-sm font-semibold text-foreground">
+                {holdings.reduce((s, h) => s + h.quantity, 0)}
+              </span>
+            </td>
+            <td className="px-4 py-3 text-right">
+              <span className="text-xs text-slate-400">—</span>
+            </td>
+            <td className="px-4 py-3 text-right">
+              <span className="text-xs text-slate-400">—</span>
+            </td>
+            <td className="px-4 py-3 text-right">
+              <span className="text-sm font-bold text-foreground">{formatHKD(holdings.reduce((s, h) => s + h.totalValue, 0))}</span>
+            </td>
+            <td className="px-4 py-3 text-right">
+              <span className={`text-sm font-bold ${holdings.reduce((s, h) => s + h.unrealizedPnl, 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {holdings.reduce((s, h) => s + h.unrealizedPnl, 0) >= 0 ? "+" : ""}{formatHKD(holdings.reduce((s, h) => s + h.unrealizedPnl, 0))}
+              </span>
+            </td>
+            <td className="px-4 py-3" />
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+// =============================================================================
+// HOLDINGS CARDS COMPONENT
+// =============================================================================
+
+function HoldingsCards({ holdings }: { holdings: HoldingWithVolatility[] }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+      {holdings.map((holding) => (
+        <motion.div
+          key={holding.id}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card rounded-xl p-3 border border-border hover:border-border/80 transition-all"
+        >
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              holding.grade === "Sealed" ? "bg-violet-500/10" : "bg-sky-500/10"
+            }`}>
+              {holding.grade === "Sealed" ? (
+                <Package className="w-5 h-5 text-violet-400" />
+              ) : (
+                <Shield className="w-5 h-5 text-sky-400" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{holding.name}</p>
+              <p className="text-[10px] text-slate-500 truncate">{holding.setName} · {holding.grade}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border">
+            <div>
+              <p className="text-[10px] text-slate-400">Qty</p>
+              <p className="text-sm font-semibold text-foreground">{holding.quantity}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">Value</p>
+              <p className="text-sm font-semibold text-foreground">{formatHKD(holding.totalValue)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">P&L</p>
+              <p className={`text-sm font-semibold ${holding.unrealizedPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {holding.unrealizedPnl >= 0 ? "+" : ""}{formatHKD(holding.unrealizedPnl)}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      ))}
     </div>
   );
 }
@@ -387,6 +754,10 @@ function PortfolioChart({
 // =============================================================================
 
 function TopHoldingsMarquee({ holdings }: { holdings: HoldingWithVolatility[] }) {
+  const topHoldings = [...holdings]
+    .sort((a, b) => b.totalValue - a.totalValue)
+    .slice(0, 5);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -397,15 +768,15 @@ function TopHoldingsMarquee({ holdings }: { holdings: HoldingWithVolatility[] })
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-accent" />
-          Most Valuable Assets
+          Top 5 Most Valuable
         </h3>
         <span className="text-xs text-slate-400">
-          Top {holdings.length} by value
+          By total value
         </span>
       </div>
 
       <div className="space-y-3">
-        {holdings.map((holding, idx) => (
+        {topHoldings.map((holding, idx) => (
           <TopHoldingRow key={holding.id} holding={holding} rank={idx + 1} />
         ))}
       </div>
@@ -420,15 +791,6 @@ function TopHoldingRow({
   holding: HoldingWithVolatility;
   rank: number;
 }) {
-  const value = calculateHoldingValue(holding);
-  const pnl = value - holding.quantity * holding.purchasePriceHkd;
-  const pnlPercent =
-    holding.purchasePriceHkd > 0
-      ? (pnl / (holding.quantity * holding.purchasePriceHkd)) * 100
-      : 0;
-  const isProfit = pnl >= 0;
-
-  // Determine if this is a high volatility asset
   const isHighVolatility = holding.volatilityLevel === "high" || holding.volatilityLevel === "extreme";
 
   return (
@@ -447,20 +809,14 @@ function TopHoldingRow({
         <span className="text-xs font-bold text-accent">{rank}</span>
       </div>
 
-      {/* Image Placeholder */}
-      <div className="w-10 h-10 rounded-lg bg-surface-elevated flex items-center justify-center overflow-hidden flex-shrink-0">
-        {holding.imageUrl ? (
-          <img
-            src={holding.imageUrl}
-            alt={holding.name}
-            className="w-full h-full object-cover"
-          />
+      {/* Icon */}
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+        holding.grade === "Sealed" ? "bg-violet-500/10" : "bg-sky-500/10"
+      }`}>
+        {holding.grade === "Sealed" ? (
+          <Package className="w-4 h-4 text-violet-400" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-            <span className="text-xs text-slate-500">
-              {holding.name.charAt(0)}
-            </span>
-          </div>
+          <Shield className="w-4 h-4 text-sky-400" />
         )}
       </div>
 
@@ -470,45 +826,40 @@ function TopHoldingRow({
           <p className="text-sm font-medium text-foreground truncate">
             {holding.name}
           </p>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+            holding.grade === "Sealed" ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"
+          }`}>
             {holding.grade}
           </span>
-          {/* High Volatility Tag */}
           {isHighVolatility && (
             <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
               <AlertTriangle className="w-2.5 h-2.5" />
-              High Volatility
+              High Vol
             </span>
           )}
         </div>
         <p className="text-xs text-slate-400 truncate">
-          {holding.setName} {holding.cardNumber && `· #${holding.cardNumber}`}
+          {holding.setName} {holding.cardNumber && `· #${holding.cardNumber}`} · Qty: {holding.quantity}
         </p>
       </div>
 
       {/* Value & P&L */}
       <div className="text-right flex-shrink-0">
         <p className="text-sm font-semibold text-foreground">
-          {formatHKD(value)}
+          {formatHKD(holding.totalValue)}
         </p>
         <div
           className={`flex items-center justify-end gap-0.5 text-xs ${
-            isProfit ? "text-emerald-400" : "text-red-400"
+            holding.unrealizedPnl >= 0 ? "text-emerald-400" : "text-red-400"
           }`}
         >
-          {isProfit ? (
+          {holding.unrealizedPnl >= 0 ? (
             <ArrowUpRight className="w-3 h-3" />
           ) : (
             <ArrowDownRight className="w-3 h-3" />
           )}
-          <span>{formatPercentage(pnlPercent)}</span>
+          <span>{holding.pnlPercent >= 0 ? "+" : ""}{holding.pnlPercent.toFixed(1)}%</span>
         </div>
-        {/* Volatility Index */}
-        <p className={`text-[10px] mt-0.5 ${
-          isHighVolatility ? "text-amber-400" : "text-slate-500"
-        }`}>
-          Vol: {holding.volatilityIndex.toFixed(1)}%
-        </p>
       </div>
     </motion.div>
   );
