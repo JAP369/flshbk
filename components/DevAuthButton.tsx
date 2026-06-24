@@ -3,14 +3,25 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth, DEV_USERS } from "@/contexts/AuthContext";
-import { X, ChevronDown, LogOut, Zap, LayoutDashboard, BarChart3, Package, TrendingUp } from "lucide-react";
+import { X, ChevronDown, LogOut, Zap, LayoutDashboard, BarChart3, Package, TrendingUp, Settings, Home, Search, Swords, GitCompareArrows } from "lucide-react";
 import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 
 const DASHBOARD_SECTIONS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/dashboard?tab=overview" },
   { id: "inventory", label: "Inventory", icon: Package, href: "/dashboard?tab=inventory" },
   { id: "deals", label: "Deals", icon: TrendingUp, href: "/dashboard?tab=deals" },
   { id: "analytics", label: "Analytics", icon: BarChart3, href: "/dashboard?tab=analytics" },
+];
+
+const NAV_SECTIONS = [
+  { id: "portal", label: "Portal", icon: Home, href: "/" },
+  { id: "find", label: "Find", icon: Search, href: "/aggregator" },
+  { id: "collection", label: "Collection", icon: Package, href: "/collection" },
+  { id: "arbitrage", label: "Arbitrage", icon: GitCompareArrows, href: "/arbitrage" },
+  { id: "portfolio", label: "Portfolio", icon: BarChart3, href: "/portfolio" },
+  { id: "arena", label: "Arena", icon: Swords, href: "/trade" },
+  { id: "vault", label: "Vault", icon: Package, href: "/vault" },
 ];
 
 export default function DevAuthButton() {
@@ -21,6 +32,7 @@ function DevAuthPanel() {
   const { user, login, logout, isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [navVisible, setNavVisible] = useState(true);
 
   return (
     <>
@@ -45,7 +57,7 @@ function DevAuthPanel() {
             className='transition-transform duration-200'
             style={{ transform: dashboardOpen ? "rotate(180deg)" : "rotate(0deg)" }}
           />
-</motion.button>
+        </motion.button>
       )}
 
       {/* Auth button — right side */}
@@ -121,6 +133,45 @@ function DevAuthPanel() {
                     <span className='text-xs font-medium text-white/80'>{section.label}</span>
                   </Link>
                 ))}
+                {/* Navigation section */}
+                <div className='mt-1 pt-1' style={{ borderTop: "1px solid rgba(0,200,100,0.1)" }}>
+                  <p className='text-[8px] font-mono uppercase tracking-widest text-white/20 px-2.5 py-1'>Navigation</p>
+                  {NAV_SECTIONS.map((section) => (
+                    <Link
+                      key={section.id}
+                      href={section.href}
+                      onClick={() => setDashboardOpen(false)}
+                      className='flex items-center gap-2 px-2.5 py-2 rounded-xl text-left hover:bg-white/5 transition-all'
+                    >
+                      <section.icon size={14} className='text-[#00c864]' />
+                      <span className='text-xs font-medium text-white/80'>{section.label}</span>
+                    </Link>
+                  ))}
+                </div>
+                {/* Nav Toggle */}
+                <div className='mt-1 pt-1' style={{ borderTop: "1px solid rgba(0,200,100,0.1)" }}>
+                  <button
+                    onClick={() => setNavVisible((v) => !v)}
+                    className='w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left hover:bg-white/5 transition-all'
+                  >
+                    <LayoutDashboard size={14} className='text-[#00c864]' />
+                    <span className='text-xs font-medium text-white/80 flex-1'>Bottom Nav</span>
+                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${navVisible ? "bg-[rgba(0,200,100,0.2)] text-[#00c864]" : "bg-[rgba(255,255,255,0.05)] text-white/30"}`}>
+                      {navVisible ? "ON" : "OFF"}
+                    </span>
+                  </button>
+                </div>
+                {/* Settings */}
+                <div className='mt-1 pt-1' style={{ borderTop: "1px solid rgba(0,200,100,0.1)" }}>
+                  <Link
+                    href="/settings"
+                    onClick={() => setDashboardOpen(false)}
+                    className='flex items-center gap-2 px-2.5 py-2 rounded-xl text-left hover:bg-white/5 transition-all'
+                  >
+                    <Settings size={14} className='text-[#00c864]' />
+                    <span className='text-xs font-medium text-white/80'>Settings</span>
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </>
@@ -268,6 +319,9 @@ function DevAuthPanel() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Bottom Nav — controlled by dashboard toggle */}
+      {isAuthenticated && navVisible && <BottomNav />}
     </>
   );
 }

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
-  Filter,
   Grid3X3,
   List,
   Package,
@@ -12,144 +11,9 @@ import {
   TrendingDown,
   ArrowUpRight,
   ArrowDownRight,
-  Star,
-  Eye,
 } from "lucide-react";
-
-// =============================================================================
-// INVENTORY DATA
-// =============================================================================
-
-const inventoryItems = [
-  {
-    id: "inv-001",
-    name: "Charizard ex",
-    setName: "Scarlet & Violet",
-    setCode: "sv01",
-    cardNumber: "054/198",
-    grade: "PSA 10",
-    quantity: 2,
-    purchasePrice: 3200,
-    currentPrice: 8500,
-    totalValue: 17000,
-    pnl: 10600,
-    pnlPercent: 165.6,
-    allocation: "vault",
-    category: "Pokemon",
-  },
-  {
-    id: "inv-002",
-    name: "Blue-Eyes White Dragon",
-    setName: "Legend of Blue-Eyes",
-    setCode: "LOB",
-    cardNumber: "LOB-001",
-    grade: "BGS 10",
-    quantity: 1,
-    purchasePrice: 8500,
-    currentPrice: 25000,
-    totalValue: 25000,
-    pnl: 16500,
-    pnlPercent: 194.1,
-    allocation: "vault",
-    category: "Yu-Gi-Oh!",
-  },
-  {
-    id: "inv-003",
-    name: "Monkey D. Luffy",
-    setName: "Romance Dawn",
-    setCode: "op01",
-    cardNumber: "OP01-001",
-    grade: "PSA 10",
-    quantity: 1,
-    purchasePrice: 5200,
-    currentPrice: 15000,
-    totalValue: 15000,
-    pnl: 9800,
-    pnlPercent: 188.5,
-    allocation: "active",
-    category: "One Piece",
-  },
-  {
-    id: "inv-004",
-    name: "Umbreon VMAX",
-    setName: "Evolving Skies",
-    setCode: "swsh07",
-    cardNumber: "069/203",
-    grade: "PSA 10",
-    quantity: 1,
-    purchasePrice: 8000,
-    currentPrice: 15000,
-    totalValue: 15000,
-    pnl: 7000,
-    pnlPercent: 87.5,
-    allocation: "vault",
-    category: "Pokemon",
-  },
-  {
-    id: "inv-005",
-    name: "Miraidon ex",
-    setName: "Scarlet & Violet",
-    setCode: "sv01",
-    cardNumber: "081/198",
-    grade: "PSA 10",
-    quantity: 1,
-    purchasePrice: 2800,
-    currentPrice: 6800,
-    totalValue: 6800,
-    pnl: 4000,
-    pnlPercent: 142.9,
-    allocation: "vault",
-    category: "Pokemon",
-  },
-  {
-    id: "inv-006",
-    name: "151 Booster Box",
-    setName: "Scarlet & Violet 151",
-    setCode: "sv151",
-    cardNumber: null,
-    grade: "Sealed",
-    quantity: 3,
-    purchasePrice: 1200,
-    currentPrice: 1500,
-    totalValue: 4500,
-    pnl: 900,
-    pnlPercent: 25.0,
-    allocation: "vault",
-    category: "Pokemon",
-  },
-  {
-    id: "inv-007",
-    name: "Evolving Skies Booster Box",
-    setName: "Sword & Shield",
-    setCode: "swsh07",
-    cardNumber: null,
-    grade: "Sealed",
-    quantity: 2,
-    purchasePrice: 4500,
-    currentPrice: 4000,
-    totalValue: 8000,
-    pnl: -1000,
-    pnlPercent: -11.1,
-    allocation: "vault",
-    category: "Pokemon",
-  },
-  {
-    id: "inv-008",
-    name: "Mewtwo GX",
-    setName: "Hidden Fates",
-    setCode: "hif",
-    cardNumber: "33/68",
-    grade: "BGS 9.5",
-    quantity: 2,
-    purchasePrice: 2200,
-    currentPrice: 2800,
-    totalValue: 5600,
-    pnl: 1200,
-    pnlPercent: 27.3,
-    allocation: "vault",
-    category: "Pokemon",
-  },
-];
+import { PORTFOLIO_HOLDINGS } from "@/data/portfolio-holdings";
+import { resolveCardImages, CardImageRequest } from "@/lib/card-images";
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -165,6 +29,70 @@ function formatHKD(value: number): string {
 }
 
 // =============================================================================
+// ADAPTED INVENTORY ITEM TYPE
+// =============================================================================
+
+interface AdaptedItem {
+  id: string;
+  name: string;
+  setName: string;
+  setCode: string;
+  cardNumber: string | null;
+  grade: string;
+  quantity: number;
+  purchasePrice: number;
+  currentPrice: number;
+  totalValue: number;
+  pnl: number;
+  pnlPercent: number;
+  allocation: string;
+  category: string;
+}
+
+function adaptHoldings() {
+  return PORTFOLIO_HOLDINGS.map((h) => {
+    const totalValue = h.currentPriceHkd * h.quantity;
+    const costBasis = h.purchasePriceHkd * h.quantity;
+    const pnl = totalValue - costBasis;
+    const pnlPercent = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+
+    let category = "Other";
+    const code = h.setCode.toLowerCase();
+    if (
+      code.includes("sv") || code.includes("swsh") || code.includes("ssv") ||
+      code.includes("vmax") || code.includes("hif") || code.includes("rof") ||
+      code.includes("mega") || code.includes("tg") || code.includes("tr") ||
+      code.includes("sm") || code.includes("starter") || code.includes("25th") ||
+      code.includes("promo") || code.includes("cr") || code.includes("pday") ||
+      code.includes("ah") || code.includes("fp")
+    ) {
+      category = "Pokemon";
+    } else if (code.includes("op")) {
+      category = "One Piece";
+    } else if (code.includes("lob") || code.includes("yugioh")) {
+      category = "Yu-Gi-Oh!";
+    }
+
+    return {
+      id: h.id,
+      name: h.name,
+      setName: h.setName,
+      setCode: h.setCode,
+      cardNumber: h.cardNumber,
+      grade: h.grade ?? "Ungraded",
+      quantity: h.quantity,
+      purchasePrice: h.purchasePriceHkd,
+      currentPrice: h.currentPriceHkd,
+      totalValue,
+      pnl,
+      pnlPercent,
+      allocation: h.allocationSide === "right_vault" ? "vault" : "active",
+      category,
+    };
+  });
+}
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -172,8 +100,34 @@ export function InventoryTab() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [allocationFilter, setAllocationFilter] = useState<"all" | "active" | "vault">("all");
+  const [cardImages, setCardImages] = useState<Record<string, string | null>>({});
 
-  const filteredItems = inventoryItems.filter((item) => {
+  const adaptedItems = useMemo(() => adaptHoldings(), []);
+
+  // Fetch real card images on mount
+  useEffect(() => {
+    const requests: CardImageRequest[] = PORTFOLIO_HOLDINGS.map((h) => ({
+      id: h.id,
+      name: h.name,
+      setCode: h.setCode,
+      cardNumber: h.imageUrl ? null : h.cardNumber, // skip if static URL exists
+    }));
+
+    // First, use any static imageUrls from the data
+    const staticImages: Record<string, string | null> = {};
+    PORTFOLIO_HOLDINGS.forEach((h) => {
+      if (h.imageUrl && h.imageUrl.includes("pokemontcg.io")) {
+        staticImages[h.id] = h.imageUrl;
+      }
+    });
+
+    // Resolve the rest via API
+    resolveCardImages(requests).then((apiImages) => {
+      setCardImages({ ...staticImages, ...apiImages });
+    });
+  }, []);
+
+  const filteredItems = adaptedItems.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.setName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -182,37 +136,23 @@ export function InventoryTab() {
     return matchesSearch && matchesAllocation;
   });
 
-  const totalQuantity = inventoryItems.reduce((sum, i) => sum + i.quantity, 0);
-  const totalValue = inventoryItems.reduce((sum, i) => sum + i.totalValue, 0);
-  const totalPnl = inventoryItems.reduce((sum, i) => sum + i.pnl, 0);
+  const totalQuantity = adaptedItems.reduce((sum, i) => sum + i.quantity, 0);
+  const totalValue = adaptedItems.reduce((sum, i) => sum + i.totalValue, 0);
+  const totalPnl = adaptedItems.reduce((sum, i) => sum + i.pnl, 0);
 
   return (
     <div className="space-y-6">
       {/* Stats Header */}
       <div className="grid grid-cols-3 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-xl p-4"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-4">
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total Items</p>
           <p className="font-serif text-2xl text-foreground">{totalQuantity}</p>
         </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card rounded-xl p-4"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-xl p-4">
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total Value</p>
           <p className="font-serif text-2xl text-foreground">{formatHKD(totalValue)}</p>
         </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass-card rounded-xl p-4"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card rounded-xl p-4">
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Unrealized P&L</p>
           <p className={`font-serif text-2xl ${totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
             {totalPnl >= 0 ? "+" : ""}{formatHKD(totalPnl)}
@@ -222,7 +162,6 @@ export function InventoryTab() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -234,7 +173,6 @@ export function InventoryTab() {
           />
         </div>
 
-        {/* Allocation Filter */}
         <div className="flex items-center gap-1 p-1 bg-surface-elevated rounded-xl border border-border">
           {(["all", "active", "vault"] as const).map((filter) => (
             <button
@@ -251,21 +189,16 @@ export function InventoryTab() {
           ))}
         </div>
 
-        {/* View Toggle */}
         <div className="flex items-center gap-1 p-1 bg-surface-elevated rounded-xl border border-border">
           <button
             onClick={() => setViewMode("grid")}
-            className={`p-2 rounded-lg transition-all ${
-              viewMode === "grid" ? "bg-accent/10 text-accent" : "text-slate-400 hover:text-foreground"
-            }`}
+            className={`p-2 rounded-lg transition-all ${viewMode === "grid" ? "bg-accent/10 text-accent" : "text-slate-400 hover:text-foreground"}`}
           >
             <Grid3X3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode("list")}
-            className={`p-2 rounded-lg transition-all ${
-              viewMode === "list" ? "bg-accent/10 text-accent" : "text-slate-400 hover:text-foreground"
-            }`}
+            className={`p-2 rounded-lg transition-all ${viewMode === "list" ? "bg-accent/10 text-accent" : "text-slate-400 hover:text-foreground"}`}
           >
             <List className="w-4 h-4" />
           </button>
@@ -275,27 +208,15 @@ export function InventoryTab() {
       {/* Inventory Grid/List */}
       <AnimatePresence mode="wait">
         {viewMode === "grid" ? (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-          >
+          <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredItems.map((item, index) => (
-              <InventoryCard key={item.id} item={item} index={index} />
+              <InventoryCard key={item.id} item={item} imageUrl={cardImages[item.id] ?? null} index={index} />
             ))}
           </motion.div>
         ) : (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="space-y-3"
-          >
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
             {filteredItems.map((item, index) => (
-              <InventoryListItem key={item.id} item={item} index={index} />
+              <InventoryListItem key={item.id} item={item} imageUrl={cardImages[item.id] ?? null} index={index} />
             ))}
           </motion.div>
         )}
@@ -315,7 +236,7 @@ export function InventoryTab() {
 // INVENTORY CARD (GRID VIEW)
 // =============================================================================
 
-function InventoryCard({ item, index }: { item: typeof inventoryItems[0]; index: number }) {
+function InventoryCard({ item, imageUrl, index }: { item: AdaptedItem; imageUrl: string | null; index: number }) {
   const isPositive = item.pnl >= 0;
 
   return (
@@ -325,13 +246,25 @@ function InventoryCard({ item, index }: { item: typeof inventoryItems[0]; index:
       transition={{ delay: index * 0.05 }}
       className="glass-card rounded-xl overflow-hidden border border-border hover:shadow-lg transition-shadow"
     >
-      {/* Image Placeholder */}
-      <div className="aspect-square bg-surface-elevated relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Package className="w-8 h-8 text-slate-600" />
-        </div>
+      {/* Image */}
+      <div className="aspect-[3/4] bg-surface-elevated relative overflow-hidden">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.name}
+            className="w-full h-full object-contain p-2"
+            loading="lazy"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="text-center">
+              <Package className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              <span className="text-[10px] text-slate-500 font-mono">{item.setCode}</span>
+            </div>
+          </div>
+        )}
         {/* Grade Badge */}
-        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm">
+        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm">
           <span className="text-[10px] font-bold text-white">{item.grade}</span>
         </div>
         {/* Allocation Badge */}
@@ -368,7 +301,7 @@ function InventoryCard({ item, index }: { item: typeof inventoryItems[0]; index:
 // INVENTORY LIST ITEM (LIST VIEW)
 // =============================================================================
 
-function InventoryListItem({ item, index }: { item: typeof inventoryItems[0]; index: number }) {
+function InventoryListItem({ item, imageUrl, index }: { item: AdaptedItem; imageUrl: string | null; index: number }) {
   const isPositive = item.pnl >= 0;
 
   return (
@@ -379,9 +312,18 @@ function InventoryListItem({ item, index }: { item: typeof inventoryItems[0]; in
       className="glass-card rounded-xl p-4 border border-border"
     >
       <div className="flex items-center gap-4">
-        {/* Image Placeholder */}
-        <div className="w-16 h-16 rounded-lg bg-surface-elevated flex items-center justify-center flex-shrink-0">
-          <Package className="w-6 h-6 text-slate-600" />
+        {/* Image */}
+        <div className="w-16 h-20 rounded-lg bg-surface-elevated flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={item.name}
+              className="w-full h-full object-contain p-1"
+              loading="lazy"
+            />
+          ) : (
+            <Package className="w-6 h-6 text-slate-600" />
+          )}
         </div>
 
         {/* Info */}

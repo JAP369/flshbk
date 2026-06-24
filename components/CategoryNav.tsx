@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
   X,
-  Settings,
   ChevronDown,
   LogOut,
   Zap,
@@ -86,23 +85,8 @@ export default function CategoryNav() {
             ))}
         </div>
 
-        {/* Right — settings */}
-        <div className='flex items-center gap-1'>
-          <Link href='/settings'>
-            <motion.div
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveTab("/settings")}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                isActive("/settings")
-                  ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6] border border-[rgba(245,245,220,0.2)]"
-                  : "text-[#f0ede6]/40 hover:text-[#f0ede6]/70 hover:bg-[rgba(245,245,220,0.05)] border border-transparent"
-              }`}
-            >
-              <Settings size={14} />
-              <span>Settings</span>
-            </motion.div>
-          </Link>
-        </div>
+        {/* Right — spacer for auth button */}
+        <div className='w-24' />
       </div>
 
       {/* Mobile header */}
@@ -148,6 +132,13 @@ export default function CategoryNav() {
                 <span className='max-w-[50px] truncate text-white/70 font-normal'>
                   {user.username}
                 </span>
+              )}
+              {!isAuthenticated && (
+                <Link href='/signup' onClick={() => setAuthDropdownOpen(false)}>
+                  <span className='text-[10px] font-bold px-2 py-1 rounded-lg bg-[rgba(255,45,45,0.15)] text-[#ff2d2d] border border-[rgba(255,45,45,0.3)]'>
+                    Sign Up
+                  </span>
+                </Link>
               )}
               <ChevronDown
                 size={10}
@@ -506,20 +497,7 @@ export default function CategoryNav() {
                   </div>
                 </Link>
 
-                <div className='h-px bg-[rgba(245,245,220,0.06)] my-1' />
 
-                <Link href='/settings' onClick={() => setMobileMenuOpen(false)}>
-                  <div
-                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold ${
-                      isActive("/settings")
-                        ? "bg-[rgba(245,245,220,0.1)] text-[#f0ede6]"
-                        : "text-[#f0ede6]/60"
-                    }`}
-                  >
-                    <Settings size={18} />
-                    <span>Settings</span>
-                  </div>
-                </Link>
               </div>
             </motion.div>
           </>

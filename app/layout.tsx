@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/contexts/AuthContext";
-import BottomNav from "@/components/BottomNav";
 import CategoryNav from "@/components/CategoryNav";
 import DevAuthButton from "@/components/DevAuthButton";
 
@@ -60,8 +59,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
     <>
       <DevAuthButton />
       <CategoryNav />
-      <div className='flex flex-col min-h-screen pb-safe'>{children}</div>
-      <BottomNav />
+      <div className='flex flex-col min-h-screen'>{children}</div>
     </>
   );
 }
