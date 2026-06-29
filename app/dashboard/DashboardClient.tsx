@@ -7,8 +7,11 @@ import { RefreshCw } from "lucide-react";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { OverviewTab } from "@/components/dashboard/tabs/OverviewTab";
 import { InventoryTab } from "@/components/dashboard/tabs/InventoryTab";
+import { ArbitrageTab } from "@/components/dashboard/tabs/ArbitrageTab";
 import { DealsTab } from "@/components/dashboard/tabs/DealsTab";
 import { AnalyticsTab } from "@/components/dashboard/tabs/AnalyticsTab";
+
+const VALID_TABS = ["overview", "inventory", "arbitrage", "deals", "analytics"];
 
 export function DashboardClient() {
   const searchParams = useSearchParams();
@@ -16,7 +19,7 @@ export function DashboardClient() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab && ["overview", "inventory", "deals", "analytics"].includes(tab)) {
+    if (tab && VALID_TABS.includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -29,7 +32,6 @@ export function DashboardClient() {
   return (
     <div className="min-h-screen pt-20 pb-24 bg-background">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -54,7 +56,6 @@ export function DashboardClient() {
           </div>
         </motion.header>
 
-        {/* Tab Navigation */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -64,7 +65,6 @@ export function DashboardClient() {
           <DashboardTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </motion.div>
 
-        {/* Tab Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,6 +72,7 @@ export function DashboardClient() {
         >
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "inventory" && <InventoryTab />}
+          {activeTab === "arbitrage" && <ArbitrageTab />}
           {activeTab === "deals" && <DealsTab />}
           {activeTab === "analytics" && <AnalyticsTab />}
         </motion.div>

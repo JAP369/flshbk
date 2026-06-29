@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Package,
   TrendingUp,
   BarChart3,
+  Zap,
 } from "lucide-react";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "inventory", label: "Inventory", icon: Package },
+  { id: "arbitrage", label: "Arbitrage", icon: Zap },
   { id: "deals", label: "Deals", icon: TrendingUp },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
 ];
